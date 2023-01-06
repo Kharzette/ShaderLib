@@ -73,6 +73,9 @@ VVPosTex04Tex14 ParticleVS(VPos4Tex04Tex14 input)
 	//store distance to eye
 	output.TexCoord0.z	=distance(mEyePos, pos.xyz);
 
+	//w isn't used but shutup warning
+	output.TexCoord0.w	=0;
+
 	//centering offset
 	float3	centering	=-rightDir * input.TexCoord0.y;
 	centering			-=upDir * input.TexCoord0.y;
@@ -120,6 +123,9 @@ VVPosTex04Tex14Tex24 ParticleDMNVS(VPos4Tex04Tex14 input)
 	//copy texcoords
 	output.TexCoord0.x	=input.Position.w;
 	output.TexCoord0.y	=-input.TexCoord0.x;
+
+	//zw isn't used but shutup warning
+	output.TexCoord0.zw	=0;
 
 	//copy color
 	output.TexCoord1	=input.TexCoord1;

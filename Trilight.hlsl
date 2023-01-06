@@ -28,6 +28,7 @@ struct	CubeTarg
 	float4	mNegZFace;
 };
 
+//this never got finished
 CubeTarg ShadowCubePS(VVPosTex03Tex13 input) : SV_Target
 {
 	CubeTarg	ret;

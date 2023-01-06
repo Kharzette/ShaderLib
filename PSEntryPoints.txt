@@ -2,7 +2,7 @@
 Trilight.hlsl
 	FullBrightSkinPS
 	ShadowPS
-	ShadowCubePS
+//	ShadowCubePS
 	DepthPS
 	MaterialPS
 	DMNPS
