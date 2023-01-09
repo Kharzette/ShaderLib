@@ -4,11 +4,14 @@ Texture1D	mDynLights : register(t3);
 #include "Types.hlsli"
 #include "CommonFunctions.hlsli"
 
+#define	MAX_DYNLIGHTS	16
+#define	NUM_STYLES		44
+
 cbuffer BSP : register(b5)
 {
-	bool		mbTextureEnabled;
-	float2		mTexSize;
-	uint		mPad;		//16 boundary
+	bool	mbTextureEnabled;
+	float2	mTexSize;
+	uint	mNumDynLights;
 }
 
 //putting these in their own cbuffer
@@ -16,7 +19,10 @@ cbuffer BSP : register(b5)
 cbuffer BSPStyles : register(b6)
 {
 	//intensity levels for the animated / switchable light styles
-	half	mAniIntensities[44];
+	half	mAniIntensities[NUM_STYLES];
+	uint	mPad0, mPad1;				//usee these for something
+	half4	mDynPos[MAX_DYNLIGHTS];		//xyz pos, w range
+	half4	mDynColor[MAX_DYNLIGHTS];	//colors
 }
 
 
@@ -156,16 +162,15 @@ float3	GetDynLight(float3 pixelPos, float3 normal)
 {
 	float3	nl	=0;
 
-	for(int i=0;i < 16;i++)
+	for(int i=0;i < mNumDynLights;i++)
 	{
-		float4	lCol	=mDynLights.Sample(CelSampler, float((i * 2) + 1) / 32);
-
+		float4	lCol	=mDynColor[i];
 		if(!any(lCol))
 		{
 			continue;
 		}
 
-		float4	lPos1	=mDynLights.Sample(CelSampler, float(i * 2) / 32);
+		float4	lPos1	=mDynPos[i];
 		float3	lDir	=lPos1.xyz - pixelPos;
 		float	atten	=saturate(1 - dot(lDir / lPos1.w, lDir / lPos1.w));
 
