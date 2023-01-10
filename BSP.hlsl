@@ -19,10 +19,19 @@ cbuffer BSP : register(b5)
 cbuffer BSPStyles : register(b6)
 {
 	//intensity levels for the animated / switchable light styles
-	half	mAniIntensities[NUM_STYLES];
-	uint	mPad0, mPad1;				//usee these for something
-	half4	mDynPos[MAX_DYNLIGHTS];		//xyz pos, w range
-	half4	mDynColor[MAX_DYNLIGHTS];	//colors
+	float4	mAniIntensities[NUM_STYLES / 4];
+}
+
+//dynamic light positions
+cbuffer BSPDynLightPositions : register(b7)
+{
+	float4	mDynPos[MAX_DYNLIGHTS];		//xyz pos, w range
+}
+
+//dynamic light colours
+cbuffer BSPDynLightColours : register(b8)
+{
+	float4	mDynColor[MAX_DYNLIGHTS];	//colors
 }
 
 
@@ -128,28 +137,36 @@ VVPosTex04Tex14Tex24Tex34Tex44Tex54 LightMapAnimVS(VPosNormTex04Tex14Tex24Col04 
 	//this worked, but the compiler interpreted it as a float4
 	//which caused a float to int conversion on the already int
 	//values.  I suppose this way it will work on 9.3 anyway
-	half4	sidx	=input.Color * 255;
+
+	//get original 0-255 color value (index)
+	int4	sidx	=input.Color * 255;
+
+	//find which float4 it is in
+	int4	f4Idx	=sidx / 4;
+
+	//which component of the float4
+	int4	remainder	=sidx % 4;
 	
 	//look up style intensities
 	if(sidx.x < 44)
 	{
-		output.TexCoord5.x	=mAniIntensities[sidx.x];
+		output.TexCoord5.x	=mAniIntensities[f4Idx.x][remainder.x];
 	}
 	
 	//next anim style if any
 	if(sidx.y < 44)
 	{
-		output.TexCoord5.y	=mAniIntensities[sidx.y];
+		output.TexCoord5.y	=mAniIntensities[f4Idx.y][remainder.y];
 	}
 	
 	if(sidx.z < 44)
 	{
-		output.TexCoord5.z	=mAniIntensities[sidx.z];
+		output.TexCoord5.z	=mAniIntensities[f4Idx.z][remainder.z];
 	}
 
 	if(sidx.w < 44)
 	{
-		output.TexCoord5.w	=mAniIntensities[sidx.w];
+		output.TexCoord5.w	=mAniIntensities[f4Idx.w][remainder.w];
 	}
 	
 	return	output;
