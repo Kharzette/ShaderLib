@@ -55,6 +55,7 @@ cbuffer PerShadow : register(b2)
 //or gumpy stuff for 2D
 Texture2D	mTexture0 : register(t0);
 Texture2D	mTexture1 : register(t1);
+TextureCube	mTexCube : register(t3);
 
 //outline / cel related
 //1D textures are not supported in 9_3 feature levels

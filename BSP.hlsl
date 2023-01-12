@@ -1,6 +1,4 @@
 //This hlsl is for the auto generated materials from the bsp compiler
-Texture1D	mDynLights : register(t3);
-
 #include "Types.hlsli"
 #include "CommonFunctions.hlsli"
 
@@ -479,7 +477,7 @@ float4 SkyPS(VVPosCubeTex0 input) : SV_Target
 	
 		eyeVec	=normalize(eyeVec);
 
-		color	=mTexture0.Sample(Tex0Sampler, eyeVec);
+		color	=mTexCube.Sample(Tex0Sampler, eyeVec);
 	}
 	else
 	{
