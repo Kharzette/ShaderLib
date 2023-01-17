@@ -145,6 +145,20 @@ float4 TriSolidVColorSpecPS(VVPosTex03Tex13Tex23 input) : SV_Target
 	return	float4(specular, mSolidColour.w);
 }
 
+//Solid color, vert color
+//slight angle color tweak for better face distinction
+float4 VColorPS(VVPosTex03Tex13Tex23 input) : SV_Target
+{
+	float3	pnorm	=input.TexCoord0;
+	float3	wpos	=input.TexCoord1;
+	float3	vcolor	=input.TexCoord2;
+
+	float3	eyeToWorld	=normalize(mEyePos - wpos);
+	float	factor		=dot(eyeToWorld, pnorm) * 0.5;
+
+	return	float4(vcolor * factor, 1);
+}
+
 //Solid color, trilight, and specular
 float4 TriSolidSpecPS(VVPosTex03Tex13 input) : SV_Target
 {
