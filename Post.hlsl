@@ -17,7 +17,7 @@
 #define	KERNEL_SIZE		(RADIUS * 2 + 1)
 
 //post process stuff
-cbuffer Post : register(b0)
+cbuffer Post : register(b5)
 {
 	float2		mInvViewPort;
 
@@ -37,15 +37,15 @@ cbuffer Post : register(b0)
 	float	mBlurFallOff;
 	float	mSharpNess;
 	float	mOpacity;
-}
 
-//this will probably be a KERNEL_SIZE * 4 float array on the C# side
-cbuffer PostBlur : register(b1)
-{
+	//padding
+	uint	mPad0, mPad1;
+
 	//gaussianblur stuff
 	float	mWeightsX[KERNEL_SIZE], mWeightsY[KERNEL_SIZE];
 	float	mOffsetsX[KERNEL_SIZE], mOffsetsY[KERNEL_SIZE];
 }
+
 
 //textures
 Texture2D	mNormalTex;
