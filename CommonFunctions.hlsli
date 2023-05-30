@@ -173,7 +173,7 @@ float3 ComputeTrilight(float3 normal, float3 lightDir, float3 c0, float3 c1, flo
 float3 ComputeGoodSpecular(float3 wpos, float3 lightDir, float3 pnorm, float3 lightVal)
 {
 	float3	eyeVec	=normalize(mEyePos - wpos);
-	float3	halfVec	=normalize(eyeVec + lightDir);
+	float3	halfVec	=normalize(-eyeVec + lightDir);
 	float	ndotv	=saturate(-dot(eyeVec, pnorm));
 	float	ndoth	=saturate(-dot(halfVec, pnorm));
 
