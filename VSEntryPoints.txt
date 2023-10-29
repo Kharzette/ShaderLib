@@ -35,3 +35,5 @@ Post.hlsl
 	SimpleQuad93VS
 TextMode.hlsl
 	SimpleVS
+Terrain.hlsl
+	WNormWPosTexFactVS

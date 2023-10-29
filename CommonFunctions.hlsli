@@ -16,7 +16,8 @@ cbuffer	PerFrame : register(b1)
 	float4x4	mProjection;
 	float4x4	mLightViewProj;	//for shadowing
 	float3		mEyePos;
-	uint		mPadding;
+	float		mFogStart, mFogEnd, mFogEnabled;
+	float3		mSkyGradient0, mSkyGradient1;
 }
 
 

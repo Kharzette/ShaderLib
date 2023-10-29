@@ -247,6 +247,14 @@ struct VPosNormTex04Col0
 	half4	Color		: COLOR0;
 };
 
+struct VPosNormTex04Tex14
+{
+	float3	Position	: POSITION;
+	half4	Normal		: NORMAL;
+	half4	TexCoord0	: TEXCOORD0;	
+	half4	TexCoord1	: TEXCOORD1;
+};
+
 struct VPosNormTex04Tex14Tex24
 {
 	float3	Position	: POSITION;

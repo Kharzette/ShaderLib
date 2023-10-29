@@ -66,3 +66,5 @@ Post.hlsl
 	BleachBypass93PS
 TextMode.hlsl
 	TextModePS
+Terrain.hlsl
+	TriTexFact8PS
