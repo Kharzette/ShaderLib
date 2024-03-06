@@ -48,7 +48,6 @@ VVPosTex04Tex14Tex24Tex34 WNormWPosTexFactVS(VPosNormTex04Tex14 input)
 
 	//store fog factor
 	output.TexCoord0.w	=ComputeFogFactor(length(worldPos - mEyePos));
-	output.TexCoord0.w	=0;
 	output.TexCoord1.w	=0;
 	
 	//return the output structure
