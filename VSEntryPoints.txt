@@ -37,3 +37,4 @@ TextMode.hlsl
 	SimpleVS
 Terrain.hlsl
 	WNormWPosTexFactVS
+	SkyBoxVS

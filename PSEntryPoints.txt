@@ -69,3 +69,4 @@ TextMode.hlsl
 	TextModePS
 Terrain.hlsl
 	TriTexFact8PS
+	SkyGradientFogPS
