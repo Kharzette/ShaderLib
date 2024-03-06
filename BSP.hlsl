@@ -12,7 +12,7 @@ cbuffer BSP : register(b4)
 	uint	mNumDynLights;
 
 	//intensity levels for the animated / switchable light styles
-	float	mAniIntensities[44];
+	float4	mAniIntensities[NUM_STYLES / 4];
 }
 
 //dynamic light positions
@@ -132,13 +132,13 @@ VVPosTex04Tex14Tex24Tex34Tex44Tex54 LightMapAnimVS(VPosNormTex04Tex14Tex24Col04 
 	//values.  I suppose this way it will work on 9.3 anyway
 
 	//get original 0-255 color value (index)
-	int4	sidx	=input.Color * 255;
+	uint4	sidx	=input.Color * 255;
 
 	//find which float4 it is in
-	int4	f4Idx	=sidx / 4;
+	uint4	f4Idx	=sidx / 4;
 
 	//which component of the float4
-	int4	remainder	=sidx % 4;
+	uint4	remainder	=sidx % 4;
 	
 	//look up style intensities
 	if(sidx.x < 44)
@@ -172,7 +172,7 @@ float3	GetDynLight(float3 pixelPos, float3 normal)
 {
 	float3	nl	=0;
 
-	for(int i=0;i < mNumDynLights;i++)
+	for(uint i=0;i < mNumDynLights;i++)
 	{
 		float4	lCol	=mDynColor[i];
 		if(!any(lCol))
