@@ -1,17 +1,30 @@
 //This hlsl is for the auto generated materials from the bsp compiler
-Texture1D	mDynLights : register(t3);
-
 #include "Types.hlsli"
 #include "CommonFunctions.hlsli"
 
+#define	MAX_DYNLIGHTS	16
+#define	NUM_STYLES		44
+
 cbuffer BSP : register(b4)
 {
-	bool		mbTextureEnabled;
-	float2		mTexSize;
-	uint		mPad;		//16 boundary
+	bool	mbTextureEnabled;
+	float2	mTexSize;
+	uint	mNumDynLights;
 
 	//intensity levels for the animated / switchable light styles
 	float	mAniIntensities[44];
+}
+
+//dynamic light positions
+cbuffer BSPDynLightPositions : register(b8)
+{
+	float4	mDynPos[MAX_DYNLIGHTS];		//xyz pos, w range
+}
+
+//dynamic light colours
+cbuffer BSPDynLightColours : register(b9)
+{
+	float4	mDynColor[MAX_DYNLIGHTS];	//colors
 }
 
 
@@ -117,28 +130,36 @@ VVPosTex04Tex14Tex24Tex34Tex44Tex54 LightMapAnimVS(VPosNormTex04Tex14Tex24Col04 
 	//this worked, but the compiler interpreted it as a float4
 	//which caused a float to int conversion on the already int
 	//values.  I suppose this way it will work on 9.3 anyway
-	half4	sidx	=input.Color * 255;
+
+	//get original 0-255 color value (index)
+	int4	sidx	=input.Color * 255;
+
+	//find which float4 it is in
+	int4	f4Idx	=sidx / 4;
+
+	//which component of the float4
+	int4	remainder	=sidx % 4;
 	
 	//look up style intensities
 	if(sidx.x < 44)
 	{
-		output.TexCoord5.x	=mAniIntensities[sidx.x];
+		output.TexCoord5.x	=mAniIntensities[f4Idx.x][remainder.x];
 	}
 	
 	//next anim style if any
 	if(sidx.y < 44)
 	{
-		output.TexCoord5.y	=mAniIntensities[sidx.y];
+		output.TexCoord5.y	=mAniIntensities[f4Idx.y][remainder.y];
 	}
 	
 	if(sidx.z < 44)
 	{
-		output.TexCoord5.z	=mAniIntensities[sidx.z];
+		output.TexCoord5.z	=mAniIntensities[f4Idx.z][remainder.z];
 	}
 
 	if(sidx.w < 44)
 	{
-		output.TexCoord5.w	=mAniIntensities[sidx.w];
+		output.TexCoord5.w	=mAniIntensities[f4Idx.w][remainder.w];
 	}
 	
 	return	output;
@@ -151,16 +172,15 @@ float3	GetDynLight(float3 pixelPos, float3 normal)
 {
 	float3	nl	=0;
 
-	for(int i=0;i < 16;i++)
+	for(int i=0;i < mNumDynLights;i++)
 	{
-		float4	lCol	=mDynLights.Sample(CelSampler, float((i * 2) + 1) / 32);
-
+		float4	lCol	=mDynColor[i];
 		if(!any(lCol))
 		{
 			continue;
 		}
 
-		float4	lPos1	=mDynLights.Sample(CelSampler, float(i * 2) / 32);
+		float4	lPos1	=mDynPos[i];
 		float3	lDir	=lPos1.xyz - pixelPos;
 		float	atten	=saturate(1 - dot(lDir / lPos1.w, lDir / lPos1.w));
 
@@ -452,7 +472,7 @@ float4 SkyPS(VVPosCubeTex0 input) : SV_Target
 	
 		eyeVec	=normalize(eyeVec);
 
-		color	=mTexture0.Sample(Tex0Sampler, eyeVec);
+		color	=mTexCube.Sample(Tex0Sampler, eyeVec);
 	}
 	else
 	{

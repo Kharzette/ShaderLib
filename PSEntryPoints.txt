@@ -23,6 +23,7 @@ Trilight.hlsl
 	TriCelColorSpecPS
 	Tex0Col0DecalPS
 	Tex0Tex1Col0DecalPS
+	VColorPS
 2D.hlsl
 	ParticlePS
 	TextPS

@@ -56,6 +56,7 @@ cbuffer PerShadow : register(b2)
 //or gumpy stuff for 2D
 Texture2D	mTexture0 : register(t0);
 Texture2D	mTexture1 : register(t1);
+TextureCube	mTexCube : register(t3);
 
 //outline / cel related
 //1D textures are not supported in 9_3 feature levels
@@ -173,7 +174,7 @@ float3 ComputeTrilight(float3 normal, float3 lightDir, float3 c0, float3 c1, flo
 float3 ComputeGoodSpecular(float3 wpos, float3 lightDir, float3 pnorm, float3 lightVal)
 {
 	float3	eyeVec	=normalize(mEyePos - wpos);
-	float3	halfVec	=normalize(eyeVec + lightDir);
+	float3	halfVec	=normalize(-eyeVec + lightDir);
 	float	ndotv	=saturate(-dot(eyeVec, pnorm));
 	float	ndoth	=saturate(-dot(halfVec, pnorm));
 
@@ -201,7 +202,7 @@ float3 ComputeGoodSpecular(float3 wpos, float3 lightDir, float3 pnorm, float3 li
 float3 ComputeCheapSpecular(float3 wpos, float3 lightDir, float3 pnorm, float3 lightVal)
 {
 	float3	eyeVec	=normalize(mEyePos - wpos);
-	float3	halfVec	=normalize(eyeVec + lightDir);
+	float3	halfVec	=normalize(-eyeVec + lightDir);
 	float	ndotv	=saturate(-dot(eyeVec, pnorm));
 	float	ndoth	=saturate(-dot(halfVec, pnorm));
 
