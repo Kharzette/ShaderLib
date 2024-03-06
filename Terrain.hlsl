@@ -67,14 +67,35 @@ float4	TriTexFact8PS(VVPosTex04Tex14Tex24Tex34 input) : SV_Target
 	//might make this a per element scale factor
 	worldXZ	*=0.01;
 
-	texColor	+=mTexture0.Sample(Tex0Sampler, worldXZ) * input.TexCoord2.x;
-	texColor	+=mTexture0.Sample(Tex0Sampler, worldXZ) * input.TexCoord2.y;
-	texColor	+=mTexture0.Sample(Tex0Sampler, worldXZ) * input.TexCoord2.z;
-	texColor	+=mTexture0.Sample(Tex0Sampler, worldXZ) * input.TexCoord2.w;
-	texColor	+=mTexture0.Sample(Tex0Sampler, worldXZ) * input.TexCoord3.x;
-	texColor	+=mTexture0.Sample(Tex0Sampler, worldXZ) * input.TexCoord3.y;
-	texColor	+=mTexture0.Sample(Tex0Sampler, worldXZ) * input.TexCoord3.z;
-	texColor	+=mTexture0.Sample(Tex0Sampler, worldXZ) * input.TexCoord3.w;
+	float2	tcoord	=frac(worldXZ);
+
+	//4 textures in x, 2 in y
+	tcoord.x	*=0.25f;
+	tcoord.y	*=0.5f;
+
+	texColor	+=mTexture0.Sample(Tex0Sampler, tcoord) * input.TexCoord2.x;
+
+	tcoord.x	+=0.25f;
+	texColor	+=mTexture0.Sample(Tex0Sampler, tcoord) * input.TexCoord2.y;
+
+	tcoord.x	+=0.25f;
+	texColor	+=mTexture0.Sample(Tex0Sampler, tcoord) * input.TexCoord2.z;
+
+	tcoord.x	+=0.25f;
+	texColor	+=mTexture0.Sample(Tex0Sampler, tcoord) * input.TexCoord2.w;
+
+	tcoord.x	-=1.0f;
+	tcoord.y	+=0.5f;
+	texColor	+=mTexture0.Sample(Tex0Sampler, tcoord) * input.TexCoord3.x;
+
+	tcoord.x	+=0.25f;
+	texColor	+=mTexture0.Sample(Tex0Sampler, tcoord) * input.TexCoord3.y;
+
+	tcoord.x	+=0.25f;
+	texColor	+=mTexture0.Sample(Tex0Sampler, tcoord) * input.TexCoord3.z;
+
+	tcoord.x	+=0.25f;
+	texColor	+=mTexture0.Sample(Tex0Sampler, tcoord) * input.TexCoord3.w;
 
 	float3	pnorm	=input.TexCoord0.xyz;
 	float	fog		=input.TexCoord0.w;
