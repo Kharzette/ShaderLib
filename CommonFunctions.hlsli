@@ -10,14 +10,16 @@
 #define	OUTLINE_ALPHA_THRESHOLD	0.15
 
 
+//keeping all these in float4 if possible to make
+//alignment easier
 cbuffer	PerFrame : register(b1)
 {
 	float4x4	mView;
 	float4x4	mProjection;
 	float4x4	mLightViewProj;	//for shadowing
-	float3		mEyePos;
-	float		mFogStart, mFogEnd, mFogEnabled;
-	float3		mSkyGradient0, mSkyGradient1;
+	float4		mEyePos;		//w unused
+	float4		mFog;			//start, end, enabled, w unused
+	float4		mSkyGradient0, mSkyGradient1;
 }
 
 
@@ -25,21 +27,17 @@ cbuffer PerObject : register(b0)
 {
 	float4x4	mWorld;
 	float4		mSolidColour;
-	float4		mSpecColor;
+	float4		mSpecColorPow;	//pow in w
 
 	//These are considered directional (no falloff)
+	//light direction in w component
 	float4	mLightColor0;		//trilights need 3 colors
 	float4	mLightColor1;		//trilights need 3 colors
 	float4	mLightColor2;		//trilights need 3 colors
 
-	float3	mLightDirection;
-	float	mSpecPower;
-	
-	//material id for borders etc
-	int		mMaterialID;
-
 	//a force vector for doing physicsy stuff
-	float3	mDanglyForce;
+	//integer material id in w
+	float4	mDanglyForceMID;
 }
 
 
@@ -178,17 +176,17 @@ float3 ComputeGoodSpecular(float3 wpos, float3 lightDir, float3 pnorm, float3 li
 	float	ndotv	=saturate(-dot(eyeVec, pnorm));
 	float	ndoth	=saturate(-dot(halfVec, pnorm));
 
-	float	normalizationTerm	=(mSpecPower + 2.0f) / 8.0f;
-	float	blinnPhong			=pow(ndoth, mSpecPower);
+	float	normalizationTerm	=(mSpecColorPow.w + 2.0f) / 8.0f;
+	float	blinnPhong			=pow(ndoth, mSpecColorPow.w);
 	float	specTerm			=normalizationTerm * blinnPhong;
 	
 	//fresnel stuff
 	float	base		=1.0f - dot(halfVec, lightDir);
 	float	exponential	=pow(base, 5.0f);
-	float3	fresTerm	=mSpecColor + (1.0f - mSpecColor) * exponential;
+	float3	fresTerm	=mSpecColorPow.xyz + (1.0f - mSpecColorPow.xyz) * exponential;
 
 	//vis stuff
-	float	alpha	=1.0f / (sqrt(PI_OVER_FOUR * mSpecPower + PI_OVER_TWO));
+	float	alpha	=1.0f / (sqrt(PI_OVER_FOUR * mSpecColorPow.w + PI_OVER_TWO));
 	float	visTerm	=(lightVal * (1.0f - alpha) + alpha) *
 				(ndotv * (1.0f - alpha) + alpha);
 
@@ -206,8 +204,8 @@ float3 ComputeCheapSpecular(float3 wpos, float3 lightDir, float3 pnorm, float3 l
 	float	ndotv	=saturate(-dot(eyeVec, pnorm));
 	float	ndoth	=saturate(-dot(halfVec, pnorm));
 
-	float	normalizationTerm	=(mSpecPower + 2.0f) / 8.0f;
-	float	blinnPhong			=pow(ndoth, mSpecPower);
+	float	normalizationTerm	=(mSpecColorPow.w + 2.0f) / 8.0f;
+	float	blinnPhong			=pow(ndoth, mSpecColorPow.w);
 	float	specTerm			=normalizationTerm * blinnPhong;
 	
 	float3	specular	=specTerm * lightVal;

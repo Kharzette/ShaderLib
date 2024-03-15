@@ -5,7 +5,7 @@
 //Compute fog factor, swiped from basic effect
 float ComputeFogFactor(float d)
 {
-    return clamp((d - mFogStart) / (mFogEnd - mFogStart), 0, 1) * mFogEnabled;
+    return clamp((d - mFog.x) / (mFog.y - mFog.x), 0, 1) * mFog.z;
 }
 
 
@@ -101,7 +101,9 @@ float4	TriTexFact8PS(VVPosTex04Tex14Tex24Tex34 input) : SV_Target
 
 	pnorm	=normalize(pnorm);
 
-	float3	triLight	=ComputeTrilight(pnorm, mLightDirection,
+	float3	lightDir	=float3(mLightColor0.w, mLightColor1.w, mLightColor2.w);
+
+	float3	triLight	=ComputeTrilight(pnorm, lightDir,
 							mLightColor0, mLightColor1, mLightColor2);
 
 	texColor.xyz	*=triLight;

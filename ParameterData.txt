@@ -14,9 +14,7 @@ TriTex0
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mSpecColor
-		mSpecPower
-		mMaterialID
+		mSpecColorPow
 		mShadowCube
 		AlphaBlending
 		NoBlending
@@ -50,9 +48,7 @@ TriTex0
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mSpecColor
-		mSpecPower
-		mMaterialID
+		mSpecColorPow
 TriTex0NormalMapSolid
 	Ignored
 		mTexture1
@@ -63,9 +59,7 @@ TriTex0NormalMapSolid
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mSpecColor
-		mSpecPower
-		mMaterialID
+		mSpecColorPow
 		mShadowCube
 		AlphaBlending
 		NoBlending
@@ -98,9 +92,7 @@ TriTex0NormalMapSolid
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mSpecColor
-		mSpecPower
-		mMaterialID
+		mSpecColorPow
 TriTex0Spec
 	Ignored
 		mTexture1
@@ -111,7 +103,6 @@ TriTex0Spec
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mMaterialID
 		mShadowCube
 		AlphaBlending
 		NoBlending
@@ -144,7 +135,6 @@ TriTex0Spec
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mMaterialID
 TriTex0EM1Spec
 	Ignored
 		mBones
@@ -154,7 +144,6 @@ TriTex0EM1Spec
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mMaterialID
 		mShadowCube
 		AlphaBlending
 		NoBlending
@@ -186,7 +175,6 @@ TriTex0EM1Spec
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mMaterialID
 TriCelTex0Spec
 	Ignored
 		mTexture1
@@ -196,7 +184,6 @@ TriCelTex0Spec
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mMaterialID
 		mShadowCube
 		AlphaBlending
 		NoBlending
@@ -229,7 +216,6 @@ TriCelTex0Spec
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mMaterialID
 TriSolid
 	Ignored
 		mTexture0
@@ -241,7 +227,6 @@ TriSolid
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mMaterialID
 		mShadowCube
 		AlphaBlending
 		NoBlending
@@ -260,8 +245,7 @@ TriSolid
 		PointClamp1D
 		ShadowBlending
 		NoCull
-		mSpecColor
-		mSpecPower
+		mSpecColorPow
 		ShadowDepth
 	Hidden
 		mTexture0
@@ -277,7 +261,6 @@ TriSolid
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mMaterialID
 TriSolidSpec
 	Ignored
 		mTexture0
@@ -289,7 +272,6 @@ TriSolidSpec
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mMaterialID
 		mShadowCube
 		AlphaBlending
 		NoBlending
@@ -323,7 +305,6 @@ TriSolidSpec
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mMaterialID
 TriSolidSpecAlpha
 	Ignored
 		mTexture0
@@ -335,7 +316,6 @@ TriSolidSpecAlpha
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mMaterialID
 		mShadowCube
 		AlphaBlending
 		NoBlending
@@ -369,7 +349,6 @@ TriSolidSpecAlpha
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mMaterialID
 TriVColorSolidSpec
 	Ignored
 		mTexture0
@@ -381,7 +360,6 @@ TriVColorSolidSpec
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mMaterialID
 		mShadowCube
 		AlphaBlending
 		NoBlending
@@ -415,7 +393,6 @@ TriVColorSolidSpec
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mMaterialID
 TriCelSolidSpec
 	Ignored
 		mTexture0
@@ -426,7 +403,6 @@ TriCelSolidSpec
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mMaterialID
 		mShadowCube
 		AlphaBlending
 		NoBlending
@@ -460,7 +436,6 @@ TriCelSolidSpec
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mMaterialID
 TriTex0NormalMapSolidSpec
 	Ignored
 		mTexture1
@@ -473,7 +448,6 @@ TriTex0NormalMapSolidSpec
 		mShadowAtten
 		mSkyGradient0
 		mSkyGradient1
-		mMaterialID
 		mShadowCube
 		AlphaBlending
 		NoBlending
@@ -501,13 +475,12 @@ TriTex0NormalMapSolidSpec
 		mProjection
 		mLightViewProj
 		mEyePos
-		mDanglyForce
+		mDanglyForceMID
 		mCelTable
 		mShadowTexture
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mMaterialID
 TriTex0NormalMapSpec
 	Ignored
 		mSolidColour
@@ -518,7 +491,6 @@ TriTex0NormalMapSpec
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mMaterialID
 		mShadowCube
 		AlphaBlending
 		NoBlending
@@ -551,7 +523,6 @@ TriTex0NormalMapSpec
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mMaterialID
 TriTex0NormalMapSolidSpecInstanced
 	Ignored
 		mTexture1
@@ -562,7 +533,6 @@ TriTex0NormalMapSolidSpecInstanced
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mMaterialID
 		mShadowCube
 		AlphaBlending
 		NoBlending
@@ -595,22 +565,19 @@ TriTex0NormalMapSolidSpecInstanced
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mMaterialID
 TriSkinTex0
 	Ignored
 		mTexture1
 		mSolidColour
 		mBones
 		mLightViewProj
-		mDanglyForce
+		mDanglyForceMID
 		mCelTable
 		mShadowTexture
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mSpecColor
-		mSpecPower
-		mMaterialID
+		mSpecColorPow
 		mShadowCube
 		AlphaBlending
 		NoBlending
@@ -639,28 +606,25 @@ TriSkinTex0
 		mProjection
 		mLightViewProj
 		mEyePos
-		mDanglyForce
+		mDanglyForceMID
 		mCelTable
 		mShadowTexture
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mSpecColor
-		mSpecPower
-		mMaterialID
+		mSpecColorPow
 TriSkinSolidSpec
 	Ignored
 		mTexture0
 		mTexture1
 		mBones
 		mLightViewProj
-		mDanglyForce
+		mDanglyForceMID
 		mCelTable
 		mShadowTexture
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mMaterialID
 		mShadowCube
 		AlphaBlending
 		NoBlending
@@ -689,25 +653,23 @@ TriSkinSolidSpec
 		mProjection
 		mLightViewProj
 		mEyePos
-		mDanglyForce
+		mDanglyForceMID
 		mCelTable
 		mShadowTexture
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mMaterialID
 TriSkinCelSolidSpec
 	Ignored
 		mTexture0
 		mTexture1
 		mBones
 		mLightViewProj
-		mDanglyForce
+		mDanglyForceMID
 		mShadowTexture
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mMaterialID
 		mShadowCube
 		AlphaBlending
 		NoBlending
@@ -736,24 +698,22 @@ TriSkinCelSolidSpec
 		mProjection
 		mLightViewProj
 		mEyePos
-		mDanglyForce
+		mDanglyForceMID
 		mCelTable
 		mShadowTexture
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mMaterialID
 TriSkinCelTex0Spec
 	Ignored
 		mTexture1
 		mBones
 		mLightViewProj
-		mDanglyForce
+		mDanglyForceMID
 		mShadowTexture
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mMaterialID
 		mShadowCube
 		AlphaBlending
 		NoBlending
@@ -781,13 +741,12 @@ TriSkinCelTex0Spec
 		mProjection
 		mLightViewProj
 		mEyePos
-		mDanglyForce
+		mDanglyForceMID
 		mCelTable
 		mShadowTexture
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mMaterialID
 TriSkinDanglySolidSpec
 	Ignored
 		mTexture0
@@ -799,7 +758,6 @@ TriSkinDanglySolidSpec
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mMaterialID
 		mShadowCube
 		AlphaBlending
 		NoBlending
@@ -833,7 +791,6 @@ TriSkinDanglySolidSpec
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mMaterialID
 TriSkinDanglyCelSolidSpec
 	Ignored
 		mTexture0
@@ -844,7 +801,6 @@ TriSkinDanglyCelSolidSpec
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mMaterialID
 		mShadowCube
 		AlphaBlending
 		NoBlending
@@ -878,7 +834,6 @@ TriSkinDanglyCelSolidSpec
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mMaterialID
 TriSkinCelColorSpec
 	Ignored
 		mTexture0
@@ -886,12 +841,11 @@ TriSkinCelColorSpec
 		mSolidColour
 		mBones
 		mLightViewProj
-		mDanglyForce
+		mDanglyForceMID
 		mShadowTexture
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mMaterialID
 		mShadowCube
 		AlphaBlending
 		NoBlending
@@ -921,28 +875,25 @@ TriSkinCelColorSpec
 		mProjection
 		mLightViewProj
 		mEyePos
-		mDanglyForce
+		mDanglyForceMID
 		mCelTable
 		mShadowTexture
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mMaterialID
 TriSkinDecalTex0
 	Ignored
 		mSolidColour
 		mBones
 		mLightViewProj
 		mEyePos
-		mDanglyForce
+		mDanglyForceMID
 		mCelTable
 		mShadowTexture
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mSpecColor
-		mSpecPower
-		mMaterialID
+		mSpecColorPow
 		mShadowCube
 		AlphaBlending
 		NoBlending
@@ -970,30 +921,26 @@ TriSkinDecalTex0
 		mProjection
 		mLightViewProj
 		mEyePos
-		mDanglyForce
+		mDanglyForceMID
 		mCelTable
 		mShadowTexture
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mSpecColor
-		mSpecPower
-		mMaterialID
+		mSpecColorPow
 TriSkinDecalTex0Tex1
 	Ignored
 		mSolidColour
 		mBones
 		mLightViewProj
 		mEyePos
-		mDanglyForce
+		mDanglyForceMID
 		mCelTable
 		mShadowTexture
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mSpecColor
-		mSpecPower
-		mMaterialID
+		mSpecColorPow
 		mShadowCube
 		AlphaBlending
 		NoBlending
@@ -1021,15 +968,13 @@ TriSkinDecalTex0Tex1
 		mProjection
 		mLightViewProj
 		mEyePos
-		mDanglyForce
+		mDanglyForceMID
 		mCelTable
 		mShadowTexture
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mSpecColor
-		mSpecPower
-		mMaterialID
+		mSpecColorPow
 FullBrightSkin
 	Ignored
 		mTexture0
@@ -1039,17 +984,14 @@ FullBrightSkin
 		mLightColor0
 		mLightColor1
 		mLightColor2
-		mLightDirection
 		mEyePos
-		mDanglyForce
+		mDanglyForceMID
 		mCelTable
 		mShadowTexture
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mSpecColor
-		mSpecPower
-		mMaterialID
+		mSpecColorPow
 		mShadowCube
 		AlphaBlending
 		NoBlending
@@ -1081,17 +1023,14 @@ FullBrightSkin
 		mLightColor0
 		mLightColor1
 		mLightColor2
-		mLightDirection
 		mEyePos
-		mDanglyForce
+		mDanglyForceMID
 		mCelTable
 		mShadowTexture
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mSpecColor
-		mSpecPower
-		mMaterialID
+		mSpecColorPow
 ShadowSkin
 	Ignored
 		mTexture0
@@ -1099,18 +1038,15 @@ ShadowSkin
 		mLightColor0
 		mLightColor1
 		mLightColor2
-		mLightDirection
 		mSolidColour
 		mBones
 		mView
 		mProjection
 		mEyePos
-		mDanglyForce
+		mDanglyForceMID
 		mCelTable
 		mShadowTexture
-		mSpecColor
-		mSpecPower
-		mMaterialID
+		mSpecColorPow
 		mShadowCube
 		AlphaBlending
 		NoBlending
@@ -1136,7 +1072,6 @@ ShadowSkin
 		mLightColor0
 		mLightColor1
 		mLightColor2
-		mLightDirection
 		mSolidColour
 		mBones
 		mWorld
@@ -1144,15 +1079,13 @@ ShadowSkin
 		mProjection
 		mLightViewProj
 		mEyePos
-		mDanglyForce
+		mDanglyForceMID
 		mCelTable
 		mShadowTexture
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mSpecColor
-		mSpecPower
-		mMaterialID
+		mSpecColorPow
 Shadow
 	Ignored
 		mTexture0
@@ -1160,7 +1093,6 @@ Shadow
 		mLightColor0
 		mLightColor1
 		mLightColor2
-		mLightDirection
 		mSolidColour
 		mBones
 		mView
@@ -1168,9 +1100,7 @@ Shadow
 		mEyePos
 		mCelTable
 		mShadowTexture
-		mSpecColor
-		mSpecPower
-		mMaterialID
+		mSpecColorPow
 		mShadowCube
 		AlphaBlending
 		NoBlending
@@ -1196,7 +1126,6 @@ Shadow
 		mLightColor0
 		mLightColor1
 		mLightColor2
-		mLightDirection
 		mSolidColour
 		mBones
 		mWorld
@@ -1209,9 +1138,7 @@ Shadow
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mSpecColor
-		mSpecPower
-		mMaterialID
+		mSpecColorPow
 DMN
 	Ignored
 		mTexture0
@@ -1219,14 +1146,12 @@ DMN
 		mLightColor0
 		mLightColor1
 		mLightColor2
-		mLightDirection
 		mSolidColour
 		mBones
 		mCelTable
-		mDanglyForce
+		mDanglyForceMID
 		mShadowTexture
-		mSpecColor
-		mSpecPower
+		mSpecColorPow
 		mShadowCube
 		AlphaBlending
 		NoBlending
@@ -1252,7 +1177,6 @@ DMN
 		mLightColor0
 		mLightColor1
 		mLightColor2
-		mLightDirection
 		mSolidColour
 		mBones
 		mWorld
@@ -1261,13 +1185,12 @@ DMN
 		mLightViewProj
 		mEyePos
 		mCelTable
-		mDanglyForce
+		mDanglyForceMID
 		mShadowTexture
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mSpecColor
-		mSpecPower
+		mSpecColorPow
 DMNDangly
 	Ignored
 		mTexture0
@@ -1275,13 +1198,11 @@ DMNDangly
 		mLightColor0
 		mLightColor1
 		mLightColor2
-		mLightDirection
 		mSolidColour
 		mBones
 		mCelTable
 		mShadowTexture
-		mSpecColor
-		mSpecPower
+		mSpecColorPow
 		mShadowCube
 		AlphaBlending
 		NoBlending
@@ -1307,7 +1228,6 @@ DMNDangly
 		mLightColor0
 		mLightColor1
 		mLightColor2
-		mLightDirection
 		mSolidColour
 		mBones
 		mWorld
@@ -1320,5 +1240,4 @@ DMNDangly
 		mShadowLightPos
 		mbDirectional
 		mShadowAtten
-		mSpecColor
-		mSpecPower
+		mSpecColorPow

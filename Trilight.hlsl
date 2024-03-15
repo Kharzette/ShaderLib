@@ -45,7 +45,8 @@ float4 DepthPS(VVPosTex01 input) : SV_Target0
 //writes material id
 float4 MaterialPS(VVPosTex01 input) : SV_Target0
 {
-	return	float4(mMaterialID, 0, 0, 0);
+	//material ID in dangly w
+	return	float4(mDanglyForceMID.w, 0, 0, 0);
 }
 
 struct TwoHalf4Targets
@@ -59,7 +60,7 @@ TwoHalf4Targets DMNPS(VVPosTex03Tex13 input) : SV_Target0
 
 	float3	normed	=normalize(input.TexCoord0);
 
-	ret.targ1.x		=mMaterialID;
+	ret.targ1.x		=mDanglyForceMID.w;	//material ID
 	ret.targ1.yzw	=normed;
 	ret.targ2		=float4(input.TexCoord1, 0);
 
@@ -101,7 +102,9 @@ float4 NormalMapTriTex0Tex1PS(VVPosNormTanBiTanTex0Tex1 input) : SV_Target
 	float3	goodNorm	=ComputeNormalFromMap(
 		norm, input.Tangent, input.BiTangent, input.Normal);
 	
-	float3	texLitColor	=ComputeTrilight(goodNorm, mLightDirection,
+	float3	lightDir	=float3(mLightColor0.w, mLightColor1.w, mLightColor2.w);
+	
+	float3	texLitColor	=ComputeTrilight(goodNorm, lightDir,
 							mLightColor0, mLightColor1, mLightColor2);
 
 	texLitColor	*=texel0.xyz;
@@ -117,7 +120,8 @@ float4 TriSolidPS(VVPosTex03Tex13 input) : SV_Target
 
 	pnorm	=normalize(pnorm);
 
-	float3	triLight	=ComputeTrilight(pnorm, mLightDirection,
+	float3	lightDir	=float3(mLightColor0.w, mLightColor1.w, mLightColor2.w);
+	float3	triLight	=ComputeTrilight(pnorm, lightDir,
 							mLightColor0, mLightColor1, mLightColor2);
 
 	float3	litSolid	=mSolidColour.xyz * triLight;
@@ -134,10 +138,11 @@ float4 TriSolidVColorSpecPS(VVPosTex03Tex13Tex23 input) : SV_Target
 
 	pnorm	=normalize(pnorm);
 
-	float3	triLight	=ComputeTrilight(pnorm, mLightDirection,
+	float3	lightDir	=float3(mLightColor0.w, mLightColor1.w, mLightColor2.w);
+	float3	triLight	=ComputeTrilight(pnorm, lightDir,
 							mLightColor0, mLightColor1, mLightColor2);
 
-	float3	specular	=ComputeGoodSpecular(wpos, mLightDirection, pnorm, triLight);
+	float3	specular	=ComputeGoodSpecular(wpos, lightDir, pnorm, triLight);
 	float3	litSolid	=mSolidColour.xyz * triLight * vcolor;
 
 	specular	=saturate(specular + litSolid);
@@ -167,10 +172,11 @@ float4 TriSolidSpecPS(VVPosTex03Tex13 input) : SV_Target
 
 	pnorm	=normalize(pnorm);
 
-	float3	triLight	=ComputeTrilight(pnorm, mLightDirection,
+	float3	lightDir	=float3(mLightColor0.w, mLightColor1.w, mLightColor2.w);
+	float3	triLight	=ComputeTrilight(pnorm, lightDir,
 							mLightColor0, mLightColor1, mLightColor2);
 
-	float3	specular	=ComputeGoodSpecular(wpos, mLightDirection, pnorm, triLight);
+	float3	specular	=ComputeGoodSpecular(wpos, lightDir, pnorm, triLight);
 	float3	litSolid	=mSolidColour.xyz * triLight;
 
 	specular	=saturate(specular + litSolid);
@@ -193,7 +199,8 @@ float4 NormalMapTriTex0SolidPS(VVPosTex04Tex14Tex24Tex34 input) : SV_Target
 	float3	wpos	=input.TexCoord3.xyz;
 
 	float3	goodNorm	=ComputeNormalFromMap(norm, tan, bitan, pnorm);
-	float3	triLight	=ComputeTrilight(goodNorm, mLightDirection,
+	float3	lightDir	=float3(mLightColor0.w, mLightColor1.w, mLightColor2.w);
+	float3	triLight	=ComputeTrilight(goodNorm, lightDir,
 							mLightColor0, mLightColor1, mLightColor2);
 
 	float3	litSolid	=mSolidColour.xyz * triLight;
@@ -216,13 +223,14 @@ float4 TriTex0SpecPS(VVPosTex04Tex14 input) : SV_Target
 
 	pnorm	=normalize(pnorm);
 
-	float3	triLight	=ComputeTrilight(pnorm, mLightDirection,
+	float3	lightDir	=float3(mLightColor0.w, mLightColor1.w, mLightColor2.w);
+	float3	triLight	=ComputeTrilight(pnorm, lightDir,
 							mLightColor0, mLightColor1, mLightColor2);
 
 #if defined(SM2)
-	float3	specular	=ComputeCheapSpecular(wpos, mLightDirection, pnorm, triLight);
+	float3	specular	=ComputeCheapSpecular(wpos, lightDir, pnorm, triLight);
 #else
-	float3	specular	=ComputeGoodSpecular(wpos, mLightDirection, pnorm, triLight);
+	float3	specular	=ComputeGoodSpecular(wpos, lightDir, pnorm, triLight);
 #endif
 
 	float3	litColor	=texColor.xyz * triLight;
@@ -248,13 +256,14 @@ float4 TriTex0EM1SpecPS(VVPosTex04Tex14 input) : SV_Target
 
 	pnorm	=normalize(pnorm);
 
-	float3	triLight	=ComputeTrilight(pnorm, mLightDirection,
+	float3	lightDir	=float3(mLightColor0.w, mLightColor1.w, mLightColor2.w);
+	float3	triLight	=ComputeTrilight(pnorm, lightDir,
 							mLightColor0, mLightColor1, mLightColor2);
 
 #if defined(SM2)
-	float3	specular	=ComputeCheapSpecular(wpos, mLightDirection, pnorm, triLight);
+	float3	specular	=ComputeCheapSpecular(wpos, lightDir, pnorm, triLight);
 #else
-	float3	specular	=ComputeGoodSpecular(wpos, mLightDirection, pnorm, triLight);
+	float3	specular	=ComputeGoodSpecular(wpos, lightDir, pnorm, triLight);
 #endif
 
 	float3	litColor	=texColor.xyz * max(texEmissive, triLight);
@@ -280,13 +289,14 @@ float4 TriCelTex0EM1SpecPS(VVPosTex04Tex14 input) : SV_Target
 
 	pnorm	=normalize(pnorm);
 
-	float3	triLight	=ComputeTrilight(pnorm, mLightDirection,
+	float3	lightDir	=float3(mLightColor0.w, mLightColor1.w, mLightColor2.w);
+	float3	triLight	=ComputeTrilight(pnorm, lightDir,
 							mLightColor0, mLightColor1, mLightColor2);
 
 #if defined(SM2)
-	float3	specular	=ComputeCheapSpecular(wpos, mLightDirection, pnorm, triLight);
+	float3	specular	=ComputeCheapSpecular(wpos, lightDir, pnorm, triLight);
 #else
-	float3	specular	=ComputeGoodSpecular(wpos, mLightDirection, pnorm, triLight);
+	float3	specular	=ComputeGoodSpecular(wpos, lightDir, pnorm, triLight);
 #endif
 
 	//this quantizes the light value
@@ -326,7 +336,8 @@ float4 TriCelTex0SpecPS(VVPosTex04Tex14 input) : SV_Target
 
 	pnorm	=normalize(pnorm);
 
-	float3	triLight	=ComputeTrilight(pnorm, mLightDirection,
+	float3	lightDir	=float3(mLightColor0.w, mLightColor1.w, mLightColor2.w);
+	float3	triLight	=ComputeTrilight(pnorm, lightDir,
 							mLightColor0, mLightColor1, mLightColor2);
 
 	//this quantizes the light value
@@ -335,9 +346,9 @@ float4 TriCelTex0SpecPS(VVPosTex04Tex14 input) : SV_Target
 #endif
 
 #if defined(SM2)
-	float3	specular	=ComputeCheapSpecular(wpos, mLightDirection, pnorm, triLight);
+	float3	specular	=ComputeCheapSpecular(wpos, lightDir, pnorm, triLight);
 #else
-	float3	specular	=ComputeGoodSpecular(wpos, mLightDirection, pnorm, triLight);
+	float3	specular	=ComputeGoodSpecular(wpos, lightDir, pnorm, triLight);
 #endif
 
 	//this will quantize the specularity as well
@@ -365,7 +376,8 @@ float4 TriCelSolidSpecPS(VVPosTex03Tex13 input) : SV_Target
 
 	pnorm	=normalize(pnorm);
 
-	float3	triLight	=ComputeTrilight(pnorm, mLightDirection,
+	float3	lightDir	=float3(mLightColor0.w, mLightColor1.w, mLightColor2.w);
+	float3	triLight	=ComputeTrilight(pnorm, lightDir,
 							mLightColor0, mLightColor1, mLightColor2);
 
 	//this quantizes the light value
@@ -373,7 +385,7 @@ float4 TriCelSolidSpecPS(VVPosTex03Tex13 input) : SV_Target
 	triLight	=CalcCelColor(triLight);
 #endif
 
-	float3	specular	=ComputeGoodSpecular(wpos, mLightDirection, pnorm, triLight);
+	float3	specular	=ComputeGoodSpecular(wpos, lightDir, pnorm, triLight);
 
 	//this will quantize the specularity as well
 #if defined(CELSPECULAR)
@@ -407,10 +419,11 @@ float4 NormalMapTriTex0SolidSpecPS(VVPosTex04Tex14Tex24Tex34 input) : SV_Target
 	float3	wpos	=input.TexCoord3.xyz;
 
 	float3	goodNorm	=ComputeNormalFromMap(norm, tan, bitan, pnorm);
-	float3	triLight	=ComputeTrilight(goodNorm, mLightDirection,
+	float3	lightDir	=float3(mLightColor0.w, mLightColor1.w, mLightColor2.w);
+	float3	triLight	=ComputeTrilight(goodNorm, lightDir,
 							mLightColor0, mLightColor1, mLightColor2);
 
-	float3	specular	=ComputeGoodSpecular(wpos, mLightDirection, goodNorm, triLight);
+	float3	specular	=ComputeGoodSpecular(wpos, lightDir, goodNorm, triLight);
 	float3	litSolid	=mSolidColour.xyz * triLight;
 
 	specular	=saturate(specular + litSolid.xyz);
@@ -435,13 +448,14 @@ float4 NormalMapTriTex0SpecPS(VVPosTex04Tex14Tex24Tex34 input) : SV_Target
 	float3	wpos	=input.TexCoord3.xyz;
 
 	float3	goodNorm	=ComputeNormalFromMap(norm, tan, bitan, pnorm);
-	float3	triLight	=ComputeTrilight(goodNorm, mLightDirection,
+	float3	lightDir	=float3(mLightColor0.w, mLightColor1.w, mLightColor2.w);
+	float3	triLight	=ComputeTrilight(goodNorm, lightDir,
 							mLightColor0, mLightColor1, mLightColor2);
 
 #if defined(SM2)
-	float3	specular	=ComputeCheapSpecular(wpos, mLightDirection, goodNorm, triLight);
+	float3	specular	=ComputeCheapSpecular(wpos, lightDir, goodNorm, triLight);
 #else
-	float3	specular	=ComputeGoodSpecular(wpos, mLightDirection, goodNorm, triLight);
+	float3	specular	=ComputeGoodSpecular(wpos, lightDir, goodNorm, triLight);
 #endif
 	float3	litSolid	=texCol.xyz * triLight;
 
@@ -458,7 +472,8 @@ float4 TriCelColorSpecPS(VVPosTex04Tex14Tex24 input) : SV_Target
 
 	pnorm	=normalize(pnorm);
 
-	float3	triLight	=ComputeTrilight(pnorm, mLightDirection,
+	float3	lightDir	=float3(mLightColor0.w, mLightColor1.w, mLightColor2.w);
+	float3	triLight	=ComputeTrilight(pnorm, lightDir,
 							mLightColor0, mLightColor1, mLightColor2);
 
 	//this quantizes the light value
@@ -466,7 +481,7 @@ float4 TriCelColorSpecPS(VVPosTex04Tex14Tex24 input) : SV_Target
 	triLight	=CalcCelColor(triLight);
 #endif
 
-	float3	specular	=ComputeGoodSpecular(wpos, mLightDirection, pnorm, triLight);
+	float3	specular	=ComputeGoodSpecular(wpos, lightDir, pnorm, triLight);
 
 	//this will quantize the specularity as well
 #if defined(CELSPECULAR)

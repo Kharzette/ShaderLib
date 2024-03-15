@@ -63,9 +63,10 @@ VVPosTex0Col0 TexTriVS(VPosNormTex0 input)
 	//transform the input position to the output
 	output.Position	=mul(float4(input.Position, 1), wvp);
 	
-	float3 worldNormal	=mul(input.Normal.xyz, mWorld);
+	float3 	worldNormal	=mul(input.Normal.xyz, mWorld);
+	float3	lightDir	=float3(mLightColor0.w, mLightColor1.w, mLightColor2.w);
 
-	output.Color.xyz	=ComputeTrilight(worldNormal, mLightDirection,
+	output.Color.xyz	=ComputeTrilight(worldNormal, lightDir,
 							mLightColor0, mLightColor1, mLightColor2);
 	output.Color.w		=1.0f;
 	

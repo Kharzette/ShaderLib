@@ -32,7 +32,7 @@ VVPosTex03Tex13 ComputeSkinWorldDangly(VPosNormBoneCol0 input, float4x4 bones[MA
 	float4	worldPos	=mul(vertPos, mWorld);
 
 	//dangliness
-	worldPos.xyz	-=input.Color.x * mDanglyForce;
+	worldPos.xyz	-=input.Color.x * mDanglyForceMID.xyz;
 
 	output.TexCoord1	=worldPos.xyz;
 
@@ -239,9 +239,11 @@ VVPosTex0Col0 SkinTexTriColVS(VPosNormBoneTex0 input)
 	skVert.Normal	=input.Normal;
 	skVert.Blend0	=input.Blend0;
 	skVert.Weight0	=input.Weight0;
+
+	float3	lightDir	=float3(mLightColor0.w, mLightColor1.w, mLightColor2.w);
 	
 	VVPosCol0	singleOut	=ComputeSkinTrilight(skVert, mBones,
-								mLightDirection, mLightColor0, mLightColor1, mLightColor2);
+								lightDir, mLightColor0, mLightColor1, mLightColor2);
 	
 	VVPosTex0Col0		output;
 	output.Position		=singleOut.Position;
@@ -260,8 +262,10 @@ VVPosTex0Tex1Col0 SkinTex0Tex1TriColVS(VPosNormBoneTex0Tex1 input)
 	skVert.Blend0	=input.Blend0;
 	skVert.Weight0	=input.Weight0;
 	
+	float3	lightDir	=float3(mLightColor0.w, mLightColor1.w, mLightColor2.w);
+
 	VVPosCol0	singleOut	=ComputeSkinTrilight(skVert, mBones,
-								mLightDirection, mLightColor0, mLightColor1, mLightColor2);
+								lightDir, mLightColor0, mLightColor1, mLightColor2);
 	
 	VVPosTex0Tex1Col0	output;
 	output.Position		=singleOut.Position;
