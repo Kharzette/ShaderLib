@@ -2,6 +2,7 @@
 //see http://home.comcast.net/~tom_forsyth/blog.wiki.html#Trilights
 
 #include "CommonFunctions.hlsli"
+#include "Cel.hlsli"
 
 //shared pixel shaders
 //just shows the shape for debugging
@@ -86,7 +87,7 @@ float4 Tex0Col0CelPS(VVPosTex0Col0 input) : SV_Target
 	float4	inColor		=input.Color;
 
 #if defined(CELLIGHT)
-	inColor.xyz	=CalcCelColor(inColor.xyz);
+	inColor.xyz	=CelQuantize(inColor.xyz);
 #endif
 	float4	texLitColor	=inColor * texel;
 	
@@ -301,12 +302,12 @@ float4 TriCelTex0EM1SpecPS(VVPosTex04Tex14 input) : SV_Target
 
 	//this quantizes the light value
 #if defined(CELLIGHT)
-	triLight	=CalcCelColor(triLight);
+	triLight	=CelQuantize(triLight);
 #endif
 
 	//this will quantize the specularity as well
 #if defined(CELSPECULAR)
-	specular	=CalcCelColor(specular);
+	specular	=CelQuantize(specular);
 #endif
 
 	float3	litColor	=texColor.xyz * max(texEmissive, triLight);
@@ -315,7 +316,7 @@ float4 TriCelTex0EM1SpecPS(VVPosTex04Tex14 input) : SV_Target
 
 	//for super retro goofy color action
 #if defined(CELALL)
-	specular	=CalcCelColor(specular);
+	specular	=CelQuantize(specular);
 #endif
 
 	return	float4(specular, texColor.w);
@@ -327,7 +328,7 @@ float4 TriCelTex0SpecPS(VVPosTex04Tex14 input) : SV_Target
 	float2	tex;
 
 	tex.x	=input.TexCoord0.w;
-	tex.y	=input.TexCoord1.w;
+	tex.y	=1 - input.TexCoord1.w;
 
 	float4	texColor	=mTexture0.Sample(Tex0Sampler, tex);
 
@@ -342,7 +343,7 @@ float4 TriCelTex0SpecPS(VVPosTex04Tex14 input) : SV_Target
 
 	//this quantizes the light value
 #if defined(CELLIGHT)
-	triLight	=CalcCelColor(triLight);
+	triLight	=CelQuantize(triLight);
 #endif
 
 #if defined(SM2)
@@ -353,7 +354,7 @@ float4 TriCelTex0SpecPS(VVPosTex04Tex14 input) : SV_Target
 
 	//this will quantize the specularity as well
 #if defined(CELSPECULAR)
-	specular	=CalcCelColor(specular);
+	specular	=CelQuantize(specular);
 #endif
 
 	float3	litColor	=texColor.xyz * triLight;
@@ -362,7 +363,7 @@ float4 TriCelTex0SpecPS(VVPosTex04Tex14 input) : SV_Target
 
 	//for super retro goofy color action
 #if defined(CELALL)
-	specular	=CalcCelColor(specular);
+	specular	=CelQuantize(specular);
 #endif
 
 	return	float4(specular, texColor.w);
@@ -382,14 +383,14 @@ float4 TriCelSolidSpecPS(VVPosTex03Tex13 input) : SV_Target
 
 	//this quantizes the light value
 #if defined(CELLIGHT)
-	triLight	=CalcCelColor(triLight);
+	triLight	=CelQuantize(triLight);
 #endif
 
 	float3	specular	=ComputeGoodSpecular(wpos, lightDir, pnorm, triLight);
 
 	//this will quantize the specularity as well
 #if defined(CELSPECULAR)
-	specular	=CalcCelColor(specular);
+	specular	=CelQuantize(specular);
 #endif
 
 	float3	litSolid	=mSolidColour.xyz * triLight;
@@ -398,7 +399,7 @@ float4 TriCelSolidSpecPS(VVPosTex03Tex13 input) : SV_Target
 
 	//for super retro goofy color action
 #if defined(CELALL)
-	specular	=CalcCelColor(specular);
+	specular	=CelQuantize(specular);
 #endif
 
 	return	float4(specular, mSolidColour.w);
@@ -478,14 +479,14 @@ float4 TriCelColorSpecPS(VVPosTex04Tex14Tex24 input) : SV_Target
 
 	//this quantizes the light value
 #if defined(CELLIGHT)
-	triLight	=CalcCelColor(triLight);
+	triLight	=CelQuantize(triLight);
 #endif
 
 	float3	specular	=ComputeGoodSpecular(wpos, lightDir, pnorm, triLight);
 
 	//this will quantize the specularity as well
 #if defined(CELSPECULAR)
-	specular	=CalcCelColor(specular);
+	specular	=CelQuantize(specular);
 #endif
 
 	float3	litSolid	=input.TexCoord2.xyz * triLight;
@@ -494,7 +495,7 @@ float4 TriCelColorSpecPS(VVPosTex04Tex14Tex24 input) : SV_Target
 
 	//for super retro goofy color action
 #if defined(CELALL)
-	specular	=CalcCelColor(specular);
+	specular	=CelQuantize(specular);
 #endif
 
 	return	float4(specular, input.TexCoord2.w);
