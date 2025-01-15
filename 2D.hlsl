@@ -29,6 +29,24 @@ VVPosTex0 TextVS(VPos2Tex02 input)
 }
 
 
+VVPosCol0 ShapeVS(VPos2Col0 input)
+{
+	VVPosCol0	output;
+
+	float4	pos;
+
+	pos.xy	=input.Position.xy;
+	pos.z	=-0.5;
+	pos.w	=1;
+
+	output.Position	=mul(pos, mProjection);
+
+	output.Color	=input.Color;
+
+	return	output;
+}
+
+
 VVPosTex04 KeyedGumpVS(VPos2Tex04 input)
 {
 	VVPosTex04	output;
@@ -204,6 +222,11 @@ float4 TextPS(VVPosTex0 input) : SV_Target
 	texel	*=mTextColor;
 
 	return	texel;
+}
+
+float4 ShapePS(VVPosCol0 input) : SV_Target
+{
+	return	input.Color;
 }
 
 float4 KeyedGumpPS(VVPosTex04 input) : SV_Target

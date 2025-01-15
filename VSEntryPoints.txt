@@ -22,6 +22,7 @@ Character.hlsl
 	SkinTex0Tex1TriColVS
 2D.hlsl
 	TextVS
+	ShapeVS
 	KeyedGumpVS
 	ParticleVS
 	ParticleDMNVS

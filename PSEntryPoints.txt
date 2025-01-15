@@ -27,6 +27,7 @@ Trilight.hlsl
 2D.hlsl
 	ParticlePS
 	TextPS
+	ShapePS
 	KeyedGumpPS
 	GumpPS
 	ParticleDMNPS
