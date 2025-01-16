@@ -23,6 +23,7 @@ Character.hlsl
 2D.hlsl
 	TextVS
 	ShapeVS
+	UIStuffVS
 	KeyedGumpVS
 	ParticleVS
 	ParticleDMNVS

@@ -39,13 +39,20 @@ struct VPos2Tex02
 struct VPos2Tex04
 {
 	float2	Position	: POSITION;
-	half4	TexCoord04	: TEXCOORD0;
+	half4	TexCoord0	: TEXCOORD0;
 };
 
 struct VPos2Col0
 {
 	float2	Position	: POSITION;
 	half4	Color		: COLOR0;
+};
+
+struct VPos2Col0Tex04
+{
+	float2	Position	: POSITION;
+	half4	Color		: COLOR0;
+	half4	TexCoord0	: TEXCOORD0;
 };
 
 struct VPos4Tex04Tex14
@@ -305,6 +312,13 @@ struct VVPosTex0
 {
 	float4	Position	: SV_POSITION;
 	half2	TexCoord0	: TEXCOORD0;
+};
+
+struct VVPosCol0Tex04
+{
+	float4	Position	: SV_POSITION;
+	half4	Color		: COLOR0;
+	half4	TexCoord0	: TEXCOORD0;
 };
 
 struct VVPosTex01

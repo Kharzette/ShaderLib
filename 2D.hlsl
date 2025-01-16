@@ -29,6 +29,25 @@ VVPosTex0 TextVS(VPos2Tex02 input)
 }
 
 
+//text or 2D shapes
+VVPosCol0Tex04 UIStuffVS(VPos2Col0Tex04 input)
+{
+	VVPosCol0Tex04	output;
+
+	float4	pos;
+
+	pos.xy	=input.Position.xy;
+	pos.z	=-0.5;	//is this why my culling is backwards?
+	pos.w	=1;
+
+	output.Position		=mul(pos, mProjection);
+	output.TexCoord0	=input.TexCoord0;
+	output.Color		=input.Color;
+
+	return	output;
+}
+
+
 VVPosCol0 ShapeVS(VPos2Col0 input)
 {
 	VVPosCol0	output;
@@ -61,7 +80,7 @@ VVPosTex04 KeyedGumpVS(VPos2Tex04 input)
 
 	output.Position	=mul(pos, viewProj);
 
-	output.TexCoord0	=input.TexCoord04;
+	output.TexCoord0	=input.TexCoord0;
 
 	return	output;
 }
@@ -220,6 +239,26 @@ float4 TextPS(VVPosTex0 input) : SV_Target
 
 	//multiply by color
 	texel	*=mTextColor;
+
+	return	texel;
+}
+
+float4 UIStuffPS(VVPosCol0Tex04 input) : SV_Target
+{
+	//texture
+	float4	texel	=mTexture0.Sample(Tex0Sampler, input.TexCoord0.xy);
+
+	//texcoord z is a texture modulator
+	//for standard shapes this can zero
+	//out the texture value
+	texel	*=input.TexCoord0.z;
+
+	//texcoord w is an additive
+	//this boosts to white for shapes
+	texel	+=input.TexCoord0.w;
+
+	//multiply by color
+	texel	*=input.Color;
 
 	return	texel;
 }

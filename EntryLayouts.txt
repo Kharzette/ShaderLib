@@ -17,7 +17,8 @@ SkinWNormWPosColorVS	VPosNormBoneCol0
 SkinDanglyWnormWPos	VPosNormBoneCol0
 SkinTexTriColVS	VPosNormBoneTex0
 SkinTex0Tex1TriColVS	VPosNormBoneTex0Tex1
-TextVS	VPos2Tex02
+TextVS	VPos2Tex0
+UIStuffVS	VPos2Col0Tex04
 ShapeVS	VPos2Col0
 KeyedGumpVS	VPos2Tex04
 ParticleVS	VPos4Tex04Tex14
