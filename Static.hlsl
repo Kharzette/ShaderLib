@@ -20,15 +20,20 @@ VVPosTex03 WPosVS(VPos input)
 //worldpos and worldnormal
 VVPosTex03Tex13 WNormWPosVS(VPosNorm input)
 {
-	VVPosTex03Tex13	output;	
-	
+	VVPosTex03Tex13	output;
+
+	//I didn't want to do a full object matrix
+	//but I wanted some squishing and growing
+	//for primitive shapes
+	float3	scalyPos	=input.Position * mLocalScale.xyz;
+
 	//generate the world-view-proj matrix
 	float4x4	wvp	=mul(mul(mWorld, mView), mProjection);
 	
 	//transform the input position to the output
-	output.Position		=mul(float4(input.Position, 1), wvp);
+	output.Position		=mul(float4(scalyPos,1), wvp);
 	output.TexCoord0	=mul(input.Normal.xyz, mWorld);
-	output.TexCoord1	=mul(float4(input.Position, 1), mWorld);
+	output.TexCoord1	=mul(float4(scalyPos,1), mWorld);
 	
 	//return the output structure
 	return	output;

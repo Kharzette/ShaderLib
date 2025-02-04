@@ -38,6 +38,8 @@ cbuffer PerObject : register(b0)
 	//a force vector for doing physicsy stuff
 	//integer material id in w
 	float4	mDanglyForceMID;
+	float4	mLocalScale;		//didn't want a full object matrix
+	float4	mPOPad;				//almost as big with this though :D
 }
 
 
