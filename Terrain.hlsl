@@ -104,7 +104,7 @@ float4	TriTexFact8PS(VVPosTex04Tex14Tex24Tex34 input) : SV_Target
 	float3	lightDir	=float3(mLightColor0.w, mLightColor1.w, mLightColor2.w);
 
 	float3	triLight	=ComputeTrilight(pnorm, lightDir,
-							mLightColor0, mLightColor1, mLightColor2);
+							mLightColor0.xyz, mLightColor1.xyz, mLightColor2.xyz);
 
 	texColor.xyz	*=triLight;
 

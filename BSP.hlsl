@@ -189,7 +189,7 @@ float3	GetDynLight(float3 pixelPos, float3 normal)
 		float	ang	=(dot(normal, lDir) * atten);
 
 		ang	=max(ang, 0);
-		nl	+=lCol * ang;
+		nl	+=lCol.xyz * ang;
 	}
 	return	nl;
 }
