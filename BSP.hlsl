@@ -108,7 +108,7 @@ VVPosCubeTex0 SkyVS(VPosTex0 input)
 }
 
 
-VVPosTex04Tex14Tex24Tex34Tex44Tex54 LightMapAnimVS(VPosNormTex04Tex14Tex24Col04 input)
+VVPosTex04Tex14Tex24Tex34Tex44Tex54 LightMapAnimVS(VPosNormTex04Tex14Tex24Col0 input)
 {
 	VVPosTex04Tex14Tex24Tex34Tex44Tex54	output;
 
