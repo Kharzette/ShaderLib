@@ -19,6 +19,7 @@ Character.hlsl
 	SkinWNormWPosColorVS
 	SkinDanglyWnormWPos
 	SkinTexTriColVS
+	SkinTexTriColVS2
 	SkinTex0Tex1TriColVS
 2D.hlsl
 	TextVS

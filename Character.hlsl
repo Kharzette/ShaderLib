@@ -253,6 +253,28 @@ VVPosTex0Col0 SkinTexTriColVS(VPosNormBoneTex0 input)
 	return	output;
 }
 
+//reordered vert elements
+VVPosTex0Col0 SkinTexTriColVS2(VPosNormTex0Bone input)
+{
+	VPosNormBone	skVert;
+	skVert.Position	=input.Position;
+	skVert.Normal	=input.Normal;
+	skVert.Blend0	=input.Blend0;
+	skVert.Weight0	=input.Weight0;
+
+	float3	lightDir	=float3(mLightColor0.w, mLightColor1.w, mLightColor2.w);
+	
+	VVPosCol0	singleOut	=ComputeSkinTrilight(skVert, mBones,
+								lightDir, mLightColor0, mLightColor1, mLightColor2);
+	
+	VVPosTex0Col0		output;
+	output.Position		=singleOut.Position;
+	output.TexCoord0	=input.TexCoord0;
+	output.Color		=singleOut.Color;
+	
+	return	output;
+}
+
 //skinned dual texcoord
 VVPosTex0Tex1Col0 SkinTex0Tex1TriColVS(VPosNormBoneTex0Tex1 input)
 {

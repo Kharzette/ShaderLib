@@ -287,6 +287,23 @@ struct VPosNormTex04Tex14Tex24Col0
 	half4	Color		: COLOR0;
 };
 
+//I normally put bone before tex / col etc
+//but the newer format or maybe blender
+//is putting the tex right after normal
+struct VPosNormTex0Bone
+{
+	float3	Position	: POSITION;
+	half4	Normal		: NORMAL;
+	half2	TexCoord0	: TEXCOORD0;
+
+#if defined(SM2)
+	half4	Blend0		: BLENDINDICES0;
+#else
+	int4	Blend0		: BLENDINDICES0;
+#endif
+	half4	Weight0		: BLENDWEIGHTS0;
+};
+
 
 //pixel shader input stuff for > 9_3 feature
 //levels, uses SV_POSITION and the pixel shader
