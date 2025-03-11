@@ -15,6 +15,7 @@ Character.hlsl
 	SkinWNormVS
 	SkinWNormWPosVS
 	SkinWNormWPosTex0VS
+	SkinWNormWPosTex0VS2
 	ShadowSkinWPosVS
 	SkinWNormWPosColorVS
 	SkinDanglyWnormWPos

@@ -12,10 +12,12 @@ DMNDanglyVS	VPosNormBoneCol0
 SkinWNormVS	VPosNormBone
 SkinWNormWPosVS	VPosNormBone
 SkinWNormWPosTex0VS	VPosNormBoneTex0
+SkinWNormWPosTex0VS2	VPosNormTex0Bone
 ShadowSkinWPosVS	VPosNormBone
 SkinWNormWPosColorVS	VPosNormBoneCol0
 SkinDanglyWnormWPos	VPosNormBoneCol0
 SkinTexTriColVS	VPosNormBoneTex0
+SkinTexTriColVS2	VPosNormTex0Bone
 SkinTex0Tex1TriColVS	VPosNormBoneTex0Tex1
 TextVS	VPos2Tex0
 UIStuffVS	VPos2Col0Tex04

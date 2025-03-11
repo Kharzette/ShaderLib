@@ -171,6 +171,20 @@ VVPosTex04Tex14 SkinWNormWPosTex0VS(VPosNormBoneTex0 input)
 	return	output;
 }
 
+//skin world norm and pos and texcoord with wacky element order
+VVPosTex04Tex14 SkinWNormWPosTex0VS2(VPosNormTex0Bone input)
+{
+	VPosNormBoneTex0	tryThis;
+
+	tryThis.Position	=input.Position;
+	tryThis.Normal		=input.Normal;
+	tryThis.TexCoord0	=input.TexCoord0;
+	tryThis.Blend0		=input.Blend0;
+	tryThis.Weight0		=input.Weight0;
+
+	return	SkinWNormWPosTex0VS(tryThis);
+}
+
 //skin world pos
 VVPosTex03 ShadowSkinWPosVS(VPosNormBone input)
 {
@@ -256,23 +270,15 @@ VVPosTex0Col0 SkinTexTriColVS(VPosNormBoneTex0 input)
 //reordered vert elements
 VVPosTex0Col0 SkinTexTriColVS2(VPosNormTex0Bone input)
 {
-	VPosNormBone	skVert;
-	skVert.Position	=input.Position;
-	skVert.Normal	=input.Normal;
-	skVert.Blend0	=input.Blend0;
-	skVert.Weight0	=input.Weight0;
+	VPosNormBoneTex0	tryThis;
 
-	float3	lightDir	=float3(mLightColor0.w, mLightColor1.w, mLightColor2.w);
-	
-	VVPosCol0	singleOut	=ComputeSkinTrilight(skVert, mBones,
-								lightDir, mLightColor0, mLightColor1, mLightColor2);
-	
-	VVPosTex0Col0		output;
-	output.Position		=singleOut.Position;
-	output.TexCoord0	=input.TexCoord0;
-	output.Color		=singleOut.Color;
-	
-	return	output;
+	tryThis.Position	=input.Position;
+	tryThis.Normal		=input.Normal;
+	tryThis.TexCoord0	=input.TexCoord0;
+	tryThis.Blend0		=input.Blend0;
+	tryThis.Weight0		=input.Weight0;
+
+	return	SkinTexTriColVS(tryThis);
 }
 
 //skinned dual texcoord
