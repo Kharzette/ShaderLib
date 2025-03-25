@@ -25,7 +25,7 @@ struct Particle
 //when they are initially created
 cbuffer EmitterCB : register(b11)
 {
-	int4	mShapeLifeOn;	//shape, life min, life max, bOn
+	int4	mShapeMaxPEOn;	//shape, max part, max empty, bOn
 	float4	mPositionSize;	//start size in w
 	float4	mStartColor;
 	float4	mLineAxisFreq;	//frequency in w
@@ -35,11 +35,11 @@ cbuffer EmitterCB : register(b11)
 	float4	mColorVelMin;	//minimum color velocity
 	float4	mColorVelMax;	//maximum color velocity
 
-	float	mVelocityMin;
-	float	mVelocityMax;
+	float4	mVMinMaxLMinMax;	//velocity min, max
+								//life min, max								
 
-	int		mMaxParticles;
-	int		mMaxEmptySlots;
+	float4	mSizeVMinMax;	//size vmin, vmax
+							//empty, empty
 };
 
 struct EmitterValues
@@ -158,7 +158,7 @@ Particle	Emit()
 
 	//random position
 	ret.mPositionSize.xyz	=PositionForShape(mPositionSize.xyz,
-		mLineAxisFreq.xyz, mShapeLifeOn.x, mRVelSizeCap.z);
+		mLineAxisFreq.xyz, mShapeMaxPEOn.x, mRVelSizeCap.z);
 
 	ret.mPositionSize.w		=mPositionSize.w;	//start size
 	ret.mVelocityRot.w		=0;					//start rotation
@@ -168,13 +168,14 @@ Particle	Emit()
 	float3	velVec	=random3(ret.mPositionSize.xyz);
 	velVec	=normalize(velVec);
 
-	velVec	*=SortOfRandomValue(ret.mPositionSize.xz * 3.0f, mVelocityMin, mVelocityMax);
+	velVec	*=SortOfRandomValue(ret.mPositionSize.xz * 3.0f,
+		mVMinMaxLMinMax.x, mVMinMaxLMinMax.y);
 
 	ret.mVelocityRot.xyz	=velVec;
 
 	//life is a value between max and min life
 	ret.mLifeRSVels.x	=SortOfRandomValue(ret.mPositionSize.xy,
-		mShapeLifeOn.y, mShapeLifeOn.z);
+		mVMinMaxLMinMax.z, mVMinMaxLMinMax.w);
 
 	float4	seed	=float4(ret.mPositionSize.xyz, ret.mLifeRSVels.x);
 
@@ -187,7 +188,7 @@ Particle	Emit()
 
 	//size velocity
 	ret.mLifeRSVels.z	=SortOfRandomValue(seed.z * 3.0f,
-		mVelocityMin, mVelocityMax);
+		mSizeVMinMax.x, mSizeVMinMax.y);
 
 	ret.mLifeRSVels.w	=0;	//unused for now
 
@@ -207,6 +208,11 @@ void CSMain(uint3 dtID : SV_DispatchThreadID)
 		p.mLifeRSVels.x	-=DELTATIME;
 		if(p.mLifeRSVels.x < 0.0f)
 		{
+			//too many empty slots in use?
+			if(sEmitterValues[0].mNumEmpty >= mShapeMaxPEOn.z)
+			{
+				abort();
+			}
 			//mark empty
 			sFreeSlots[sEmitterValues[0].mNumEmpty]	=i;
 			sEmitterValues[0].mNumEmpty++;
@@ -222,7 +228,7 @@ void CSMain(uint3 dtID : SV_DispatchThreadID)
 
 	//update emitter if on
 	//this might create new particles
-	if(mShapeLifeOn.w)
+	if(mShapeMaxPEOn.w)
 	{
 		sEmitterValues[0].mTime	+=DELTATIME;
 
@@ -232,7 +238,8 @@ void CSMain(uint3 dtID : SV_DispatchThreadID)
 			int	numParts	=sEmitterValues[0].mNumParticles;
 			int	numActive	=numParts - numEmpty;
 
-			if(numActive >= mMaxParticles)
+			//max particles?
+			if(numActive >= mShapeMaxPEOn.y)
 			{
 				//arrays are full
 				sEmitterValues[0].mTime	-=mLineAxisFreq.w;
