@@ -37,6 +37,9 @@ cbuffer EmitterCB : register(b11)
 
 	float	mVelocityMin;
 	float	mVelocityMax;
+
+	int		mMaxParticles;
+	int		mMaxEmptySlots;
 };
 
 struct EmitterValues
@@ -69,49 +72,6 @@ RWStructuredBuffer<uint>	sFreeSlots : register(u2);
 RWStructuredBuffer<ParticleVert>	mPartVerts : register(u3);
 
 
-//return value between min and max
-float	SortOfRandomValue(float seed, float min, float max)
-{
-	//0 to 1
-	float	val	=noise(seed) * 0.5f;
-
-	val	*=(max - min);
-
-	return	val + min;
-}
-
-//returns a vector with values between -1 and 1
-float3	SortOfRandomVector(float3 seed)
-{
-	return	float3(noise(seed.x), noise(seed.y), noise(seed.z));
-}
-
-float4	SortOfRandomVector4(float4 seed)
-{
-	return	float4(noise(seed.x), noise(seed.y), noise(seed.z), noise(seed.w));
-}
-
-float4	SortOfRandomVector4Range(float4 seed, float min, float max)
-{
-	float4	randVec		=SortOfRandomVector4(seed);
-
-	//0 to 2 range
-	randVec	+=float4(1,1,1,1);
-
-	float	range	=max - min;
-
-	range	*=0.5f;
-
-	float4	range4	=float4(range, range, range, range);
-
-
-	randVec	*=range4;
-
-	randVec	+=min;
-
-	return	randVec;
-}
-
 float3	PositionForShape(float3 pos, float3 lineAxis, uint shape, float shapeSize)
 {
 	if(shape == EMIT_SHAPE_POINT)
@@ -123,7 +83,7 @@ float3	PositionForShape(float3 pos, float3 lineAxis, uint shape, float shapeSize
 
 	float	sizeOverTwo	=shapeSize * 0.5f;
 
-	float3	randVec		=SortOfRandomVector(pos);
+	float3	randVec		=random3(pos);
 
 	if(shape == EMIT_SHAPE_BOX)
 	{
@@ -149,6 +109,49 @@ float3	PositionForShape(float3 pos, float3 lineAxis, uint shape, float shapeSize
 	return	ret;
 }
 
+//return value between min and max
+float	SortOfRandomValue(float seed, float min, float max)
+{
+	//0 to 1
+	float	val	=random(seed) * 0.5f;
+
+	val	*=(max - min);
+
+	return	val + min;
+}
+
+//return value between min and max
+float	SortOfRandomValue(float2 seed, float min, float max)
+{
+	//0 to 1
+	float	val	=random(seed) * 0.5f;
+
+	val	*=(max - min);
+
+	return	val + min;
+}
+
+float4	SortOfRandomVector4Range(float4 seed, float min, float max)
+{
+	float4	randVec		=random(seed);
+
+	//0 to 2 range
+	randVec	+=float4(1,1,1,1);
+
+	float	range	=max - min;
+
+	range	*=0.5f;
+
+	float4	range4	=float4(range, range, range, range);
+
+	randVec	*=range4;
+
+	randVec	+=min;
+
+	return	randVec;
+}
+
+
 Particle	Emit()
 {
 	Particle	ret;
@@ -162,15 +165,15 @@ Particle	Emit()
 	ret.mColor				=mStartColor;
 
 	//velocity
-	float3	velVec	=SortOfRandomVector(ret.mPositionSize.xyz);
+	float3	velVec	=random3(ret.mPositionSize.xyz);
 	velVec	=normalize(velVec);
 
-	velVec	*=SortOfRandomValue(ret.mPositionSize.z * 3.0f, mVelocityMin, mVelocityMax);
+	velVec	*=SortOfRandomValue(ret.mPositionSize.xz * 3.0f, mVelocityMin, mVelocityMax);
 
 	ret.mVelocityRot.xyz	=velVec;
 
 	//life is a value between max and min life
-	ret.mLifeRSVels.x	=SortOfRandomValue(ret.mPositionSize.x,
+	ret.mLifeRSVels.x	=SortOfRandomValue(ret.mPositionSize.xy,
 		mShapeLifeOn.y, mShapeLifeOn.z);
 
 	float4	seed	=float4(ret.mPositionSize.xyz, ret.mLifeRSVels.x);
@@ -194,6 +197,8 @@ Particle	Emit()
 [numthreads(1, 1, 1)]
 void CSMain(uint3 dtID : SV_DispatchThreadID)
 {
+	int	adjustNumParticles	=0;
+
 	//update any existing particles
 	for(int i=0;i < sEmitterValues[0].mNumParticles;i++)
 	{
@@ -223,19 +228,30 @@ void CSMain(uint3 dtID : SV_DispatchThreadID)
 
 		while(sEmitterValues[0].mTime > mLineAxisFreq.w)
 		{
+			int	numEmpty	=sEmitterValues[0].mNumEmpty;
+			int	numParts	=sEmitterValues[0].mNumParticles;
+			int	numActive	=numParts - numEmpty;
+
+			if(numActive >= mMaxParticles)
+			{
+				//arrays are full
+				sEmitterValues[0].mTime	-=mLineAxisFreq.w;
+				continue;
+			}
+
 			Particle p	=Emit();
 
-			if(sEmitterValues[0].mNumEmpty > 0)
+			//recover empty spots in the array if possible
+			if(numEmpty > 0)
 			{
-				uint	lastIndex	=sEmitterValues[0].mNumEmpty - 1;
+				uint	lastIndex	=numEmpty - 1;
 				uint	freeIdx		=sFreeSlots[lastIndex];
 				sParticles[freeIdx]	=p;
 				sEmitterValues[0].mNumEmpty--;
-				sEmitterValues[0].mNumParticles++;
 			}
 			else
 			{
-				sParticles[sEmitterValues[0].mNumParticles]	=p;
+				sParticles[numParts]	=p;
 				sEmitterValues[0].mNumParticles++;
 			}
 
