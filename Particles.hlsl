@@ -196,7 +196,7 @@ Particle	Emit()
 }
 
 [numthreads(1, 1, 1)]
-void CSMain(uint3 dtID : SV_DispatchThreadID)
+void ParticleEmitter(uint3 dtID : SV_DispatchThreadID)
 {
 	int	adjustNumParticles	=0;
 
