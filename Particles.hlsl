@@ -13,10 +13,12 @@ struct Particle
 	float4	mPositionSize;	//size in w
 	float4	mVelocityRot;	//rot angle in w
 
-	half4	mColorVelocity;	//color changes over time
-	half4	mLifeRSVels;	//life remaining, rotational velocity
+	float4	mColorVelocity;	//color changes over time
+	float4	mLifeRSVels;	//life remaining, rotational velocity
 							//size velocity, and blank
-	half4	mColor;
+	float4	mColor;
+
+	int		mNext;	//store next active or next free spot
 };
 
 //emitter
@@ -38,15 +40,17 @@ cbuffer EmitterCB : register(b11)
 	float4	mVMinMaxLMinMax;	//velocity min, max
 								//life min, max								
 
-	float4	mSizeVMinMax;	//size vmin, vmax
-							//empty, empty
+	float4	mSizeVMinMaxSec;	//size vmin, vmax
+								//seconds, empty
 };
 
 struct EmitterValues
 {
-	float	mTime;
-	int		mNumParticles;
-	int		mNumEmpty;
+	float	mTime;			//remainder
+	int		mNumParticles;	//number active
+	int		mLast;			//last particle index
+	int		mNextFree;		//for allocing particles
+	int		mLastActive;	//counts up during iteration
 };
 
 //particle vertices for drawing
@@ -65,14 +69,47 @@ RWStructuredBuffer<Particle>	sParticles : register(u0);
 //stuff that changes over time
 RWStructuredBuffer<EmitterValues>	sEmitterValues : register(u1);
 
-//keep track of expired particles
-RWStructuredBuffer<uint>	sFreeSlots : register(u2);
-
 //spat out to feed to vertex shader
 RWStructuredBuffer<ParticleVert>	mPartVerts : register(u3);
 
 
-float3	PositionForShape(float3 pos, float3 lineAxis, uint shape, float shapeSize)
+//dealloc spots in the particle array
+void	DeAllocateIndex(int idx)
+{
+	sParticles[idx].mNext	=sEmitterValues[0].mNextFree;
+
+	sEmitterValues[0].mNextFree	=idx;
+	
+	sEmitterValues[0].mNumParticles--;
+}
+
+//alloc spots in the particle array
+int	GetNextFreeIndex()
+{
+	int	nextFree	=sEmitterValues[0].mNextFree;
+
+	if(sParticles[nextFree].mNext)
+	{
+		sEmitterValues[0].mNextFree	=sParticles[nextFree].mNext;
+	}
+	else
+	{
+		sEmitterValues[0].mNextFree++;
+	}
+
+	if(nextFree > sEmitterValues[0].mLast)
+	{
+		sEmitterValues[0].mLast	=nextFree;
+	}
+
+	sEmitterValues[0].mNumParticles++;
+
+	return	nextFree;
+}
+
+
+//random position within the emitter shape bounds
+float3	PositionForShape(float4 seed, float3 pos, float3 lineAxis, uint shape, float shapeSize)
 {
 	if(shape == EMIT_SHAPE_POINT)
 	{
@@ -83,7 +120,7 @@ float3	PositionForShape(float3 pos, float3 lineAxis, uint shape, float shapeSize
 
 	float	sizeOverTwo	=shapeSize * 0.5f;
 
-	float3	randVec		=random3(pos);
+	float3	randVec		=random3(seed.xyz);
 
 	if(shape == EMIT_SHAPE_BOX)
 	{
@@ -108,6 +145,7 @@ float3	PositionForShape(float3 pos, float3 lineAxis, uint shape, float shapeSize
 
 	return	ret;
 }
+
 
 //return value between min and max
 float	SortOfRandomValue(float seed, float min, float max)
@@ -151,13 +189,39 @@ float4	SortOfRandomVector4Range(float4 seed, float min, float max)
 	return	randVec;
 }
 
+float4	SortOfRandomVector4Range4(float4 seed, float4 min, float4 max)
+{
+	//this should produce a vec4 with values between -1 and 1
+	float4	randVec		=random(seed);
 
-Particle	Emit()
+	//0 to 2 range
+	randVec	+=float4(1,1,1,1);
+
+	float4	range	=max - min;
+
+	range	*=0.5f;
+
+	randVec	*=range;
+
+	randVec	+=min;
+
+	return	randVec;
+}
+
+
+Particle	Emit(int seedInt)
 {
 	Particle	ret;
 
+	float	seedF		=seedInt;
+	float	timeSeconds	=mSizeVMinMaxSec.z + 1.0f;
+
+	//make wacky values as a random seed
+	float4	seed	=float4(seedF * timeSeconds, seedF * 0.2f * timeSeconds,
+		seedF * 5.0f * timeSeconds, seedF * 111.0f / timeSeconds);
+
 	//random position
-	ret.mPositionSize.xyz	=PositionForShape(mPositionSize.xyz,
+	ret.mPositionSize.xyz	=PositionForShape(seed, mPositionSize.xyz,
 		mLineAxisFreq.xyz, mShapeMaxPEOn.x, mRVelSizeCap.z);
 
 	ret.mPositionSize.w		=mPositionSize.w;	//start size
@@ -165,10 +229,7 @@ Particle	Emit()
 	ret.mColor				=mStartColor;
 
 	//velocity
-	float3	velVec	=random3(ret.mPositionSize.xyz);
-	velVec	=normalize(velVec);
-
-	velVec	*=SortOfRandomValue(ret.mPositionSize.xz * 3.0f,
+	float4	velVec	=SortOfRandomVector4Range(seed,
 		mVMinMaxLMinMax.x, mVMinMaxLMinMax.y);
 
 	ret.mVelocityRot.xyz	=velVec;
@@ -177,10 +238,8 @@ Particle	Emit()
 	ret.mLifeRSVels.x	=SortOfRandomValue(ret.mPositionSize.xy,
 		mVMinMaxLMinMax.z, mVMinMaxLMinMax.w);
 
-	float4	seed	=float4(ret.mPositionSize.xyz, ret.mLifeRSVels.x);
-
-	ret.mColorVelocity	=SortOfRandomVector4Range(seed,
-		mRVelSizeCap.x, mRVelSizeCap.y);
+	ret.mColorVelocity	=SortOfRandomVector4Range4(seed,
+		mColorVelMin, mColorVelMax);
 
 	//rotational velocity
 	ret.mLifeRSVels.y	=SortOfRandomValue(seed.x * seed.z,
@@ -188,43 +247,53 @@ Particle	Emit()
 
 	//size velocity
 	ret.mLifeRSVels.z	=SortOfRandomValue(seed.z * 3.0f,
-		mSizeVMinMax.x, mSizeVMinMax.y);
+		mSizeVMinMaxSec.x, mSizeVMinMaxSec.y);
 
 	ret.mLifeRSVels.w	=0;	//unused for now
+
+	ret.mNext	=0;
 
 	return	ret;
 }
 
+
 [numthreads(1, 1, 1)]
 void ParticleEmitter(uint3 dtID : SV_DispatchThreadID)
 {
-	int	adjustNumParticles	=0;
-
-	//update any existing particles
-	for(int i=0;i < sEmitterValues[0].mNumParticles;i++)
+	for(int i=0;i <= sEmitterValues[0].mLast;i++)
 	{
+		//update any existing particles
 		Particle	p	=sParticles[i];
 
+		if(p.mLifeRSVels.x <= 0.0f)
+		{
+			continue;
+		}
+
+		//TODO: use passed in delta time
 		p.mLifeRSVels.x	-=DELTATIME;
 		if(p.mLifeRSVels.x < 0.0f)
 		{
-			//too many empty slots in use?
-			if(sEmitterValues[0].mNumEmpty >= mShapeMaxPEOn.z)
-			{
-				abort();
-			}
-			//mark empty
-			sFreeSlots[sEmitterValues[0].mNumEmpty]	=i;
-			sEmitterValues[0].mNumEmpty++;
+			DeAllocateIndex(i);
+
+			//copy the expired life value
+			sParticles[i].mLifeRSVels.x	=p.mLifeRSVels.x;
+			continue;
 		}
+
+		sEmitterValues[0].mLastActive	=i;
 
 		p.mPositionSize.xyz	+=(p.mVelocityRot.xyz * DELTATIME);
 		p.mColor			+=(p.mColorVelocity * DELTATIME);
 		p.mPositionSize.w	+=(p.mLifeRSVels.z * DELTATIME);
 		p.mVelocityRot.w	+=(p.mLifeRSVels.y * DELTATIME);
 
-		p.mColor	=clamp(p.mColor, 0, 1);
+		p.mColor	=clamp(p.mColor, half4(0,0,0,0), half4(1,1,1,1));
+
+		sParticles[i]	=p;
 	}
+
+	sEmitterValues[0].mLast	=sEmitterValues[0].mLastActive;
 
 	//update emitter if on
 	//this might create new particles
@@ -232,11 +301,10 @@ void ParticleEmitter(uint3 dtID : SV_DispatchThreadID)
 	{
 		sEmitterValues[0].mTime	+=DELTATIME;
 
+		//check frequency
 		while(sEmitterValues[0].mTime > mLineAxisFreq.w)
 		{
-			int	numEmpty	=sEmitterValues[0].mNumEmpty;
-			int	numParts	=sEmitterValues[0].mNumParticles;
-			int	numActive	=numParts - numEmpty;
+			int	numActive	=sEmitterValues[0].mNumParticles;
 
 			//max particles?
 			if(numActive >= mShapeMaxPEOn.y)
@@ -246,21 +314,9 @@ void ParticleEmitter(uint3 dtID : SV_DispatchThreadID)
 				continue;
 			}
 
-			Particle p	=Emit();
+			int	idx	=GetNextFreeIndex();
 
-			//recover empty spots in the array if possible
-			if(numEmpty > 0)
-			{
-				uint	lastIndex	=numEmpty - 1;
-				uint	freeIdx		=sFreeSlots[lastIndex];
-				sParticles[freeIdx]	=p;
-				sEmitterValues[0].mNumEmpty--;
-			}
-			else
-			{
-				sParticles[numParts]	=p;
-				sEmitterValues[0].mNumParticles++;
-			}
+			sParticles[idx]	=Emit(numActive);
 
 			sEmitterValues[0].mTime	-=mLineAxisFreq.w;
 		}
