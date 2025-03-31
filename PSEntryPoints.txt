@@ -72,3 +72,5 @@ TextMode.hlsl
 Terrain.hlsl
 	TriTexFact8PS
 	SkyGradientFogPS
+Particles.hlsl
+	ParticleSBPS

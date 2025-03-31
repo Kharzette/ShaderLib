@@ -1,4 +1,5 @@
 #include	"lygia/generative/random.hlsl"
+#include	"CommonFunctions.hlsli"
 
 #define	DELTATIME			(1.0f / 60.0f)
 #define	EMIT_SHAPE_POINT	0
@@ -27,7 +28,7 @@ struct Particle
 //when they are initially created
 cbuffer EmitterCB : register(b11)
 {
-	int4	mShapeMaxPEOn;	//shape, max part, max empty, bOn
+	int4	mShapeMaxPEOn;	//shape, max part, empty, bOn
 	float4	mPositionSize;	//start size in w
 	float4	mStartColor;
 	float4	mLineAxisFreq;	//frequency in w
@@ -40,8 +41,8 @@ cbuffer EmitterCB : register(b11)
 	float4	mVMinMaxLMinMax;	//velocity min, max
 								//life min, max								
 
-	float4	mSizeVMinMaxSec;	//size vmin, vmax
-								//seconds, empty
+	float4	mSizeVMinMaxSecDelta;	//size vmin, vmax
+									//seconds, rdelta
 };
 
 struct EmitterValues
@@ -59,8 +60,8 @@ struct EmitterValues
 struct ParticleVert
 {
 	float4	mPositionTex;		//position, UV.x in w
-	half4	mTexSizeRotBlank;	//UV.Y, size, rot
-	half4	mColor;
+	float4	mTexSizeRotBlank;	//UV.Y, size, rot
+	float4	mColor;
 };
 
 //created here and updated here
@@ -70,7 +71,10 @@ RWStructuredBuffer<Particle>	sParticles : register(u0);
 RWStructuredBuffer<EmitterValues>	sEmitterValues : register(u1);
 
 //spat out to feed to vertex shader
-RWStructuredBuffer<ParticleVert>	mPartVerts : register(u3);
+RWStructuredBuffer<ParticleVert>	sPartVerts : register(u2);
+
+//same verts in srv format
+StructuredBuffer<ParticleVert>	VSParticles : register(t2);
 
 
 //dealloc spots in the particle array
@@ -147,6 +151,14 @@ float3	PositionForShape(float4 seed, float3 pos, float3 lineAxis, uint shape, fl
 }
 
 
+//return random unit vector
+float3	SortOfRandomDirection(float3 seed)
+{
+	float3	vec	=random(seed);
+
+	return	normalize(vec);
+}
+
 //return value between min and max
 float	SortOfRandomValue(float seed, float min, float max)
 {
@@ -214,7 +226,7 @@ Particle	Emit(int seedInt)
 	Particle	ret;
 
 	float	seedF		=seedInt;
-	float	timeSeconds	=mSizeVMinMaxSec.z + 1.0f;
+	float	timeSeconds	=mSizeVMinMaxSecDelta.z + 1.0f;
 
 	//make wacky values as a random seed
 	float4	seed	=float4(seedF * timeSeconds, seedF * 0.2f * timeSeconds,
@@ -229,10 +241,11 @@ Particle	Emit(int seedInt)
 	ret.mColor				=mStartColor;
 
 	//velocity
-	float4	velVec	=SortOfRandomVector4Range(seed,
-		mVMinMaxLMinMax.x, mVMinMaxLMinMax.y);
+	float3	velVec	=SortOfRandomDirection(seed.xyz);
 
-	ret.mVelocityRot.xyz	=velVec;
+	float	speed	=SortOfRandomValue(seed.w, mVMinMaxLMinMax.x, mVMinMaxLMinMax.y);
+
+	ret.mVelocityRot.xyz	=velVec * speed;
 
 	//life is a value between max and min life
 	ret.mLifeRSVels.x	=SortOfRandomValue(ret.mPositionSize.xy,
@@ -247,7 +260,7 @@ Particle	Emit(int seedInt)
 
 	//size velocity
 	ret.mLifeRSVels.z	=SortOfRandomValue(seed.z * 3.0f,
-		mSizeVMinMaxSec.x, mSizeVMinMaxSec.y);
+		mSizeVMinMaxSecDelta.x, mSizeVMinMaxSecDelta.y);
 
 	ret.mLifeRSVels.w	=0;	//unused for now
 
@@ -260,6 +273,8 @@ Particle	Emit(int seedInt)
 [numthreads(1, 1, 1)]
 void ParticleEmitter(uint3 dtID : SV_DispatchThreadID)
 {
+	float	dt	=mSizeVMinMaxSecDelta.w;
+
 	for(int i=0;i <= sEmitterValues[0].mLast;i++)
 	{
 		//update any existing particles
@@ -271,7 +286,7 @@ void ParticleEmitter(uint3 dtID : SV_DispatchThreadID)
 		}
 
 		//TODO: use passed in delta time
-		p.mLifeRSVels.x	-=DELTATIME;
+		p.mLifeRSVels.x	-=dt;
 		if(p.mLifeRSVels.x < 0.0f)
 		{
 			DeAllocateIndex(i);
@@ -283,10 +298,10 @@ void ParticleEmitter(uint3 dtID : SV_DispatchThreadID)
 
 		sEmitterValues[0].mLastActive	=i;
 
-		p.mPositionSize.xyz	+=(p.mVelocityRot.xyz * DELTATIME);
-		p.mColor			+=(p.mColorVelocity * DELTATIME);
-		p.mPositionSize.w	+=(p.mLifeRSVels.z * DELTATIME);
-		p.mVelocityRot.w	+=(p.mLifeRSVels.y * DELTATIME);
+		p.mPositionSize.xyz	+=(p.mVelocityRot.xyz * dt);
+		p.mColor			+=(p.mColorVelocity * dt);
+		p.mPositionSize.w	+=(p.mLifeRSVels.z * dt);
+		p.mVelocityRot.w	+=(p.mLifeRSVels.y * dt);
 
 		p.mColor	=clamp(p.mColor, half4(0,0,0,0), half4(1,1,1,1));
 
@@ -299,7 +314,7 @@ void ParticleEmitter(uint3 dtID : SV_DispatchThreadID)
 	//this might create new particles
 	if(mShapeMaxPEOn.w)
 	{
-		sEmitterValues[0].mTime	+=DELTATIME;
+		sEmitterValues[0].mTime	+=dt;
 
 		//check frequency
 		while(sEmitterValues[0].mTime > mLineAxisFreq.w)
@@ -320,5 +335,188 @@ void ParticleEmitter(uint3 dtID : SV_DispatchThreadID)
 
 			sEmitterValues[0].mTime	-=mLineAxisFreq.w;
 		}
-	}	
+	}
+
+	//crap out a VB to draw
+	int	curVert	=0;
+	for(int j=0;j <= sEmitterValues[0].mLast;j++)
+	{
+		//update any existing particles
+		Particle	p	=sParticles[j];
+
+		if(p.mLifeRSVels.x <= 0.0f)
+		{
+			continue;
+		}
+
+		//tri index 0
+		sPartVerts[curVert].mPositionTex.xyz	=p.mPositionSize.xyz;
+		sPartVerts[curVert].mPositionTex.w		=0;						//texcoord x
+
+		sPartVerts[curVert].mTexSizeRotBlank.x	=1;						//texcoord y
+		sPartVerts[curVert].mTexSizeRotBlank.y	=p.mPositionSize.w;		//size
+		sPartVerts[curVert].mTexSizeRotBlank.z	=p.mVelocityRot.w;		//rotation
+		sPartVerts[curVert].mTexSizeRotBlank.w	=0;						//unused
+
+		sPartVerts[curVert].mColor	=p.mColor;
+
+		curVert++;
+
+		//tri index 1
+		sPartVerts[curVert].mPositionTex.xyz	=p.mPositionSize.xyz;
+		sPartVerts[curVert].mPositionTex.w		=1;						//texcoord x
+
+		sPartVerts[curVert].mTexSizeRotBlank.x	=0;						//texcoord y
+		sPartVerts[curVert].mTexSizeRotBlank.y	=p.mPositionSize.w;		//size
+		sPartVerts[curVert].mTexSizeRotBlank.z	=p.mVelocityRot.w;		//rotation
+		sPartVerts[curVert].mTexSizeRotBlank.w	=0;						//unused
+
+		sPartVerts[curVert].mColor	=p.mColor;
+
+		curVert++;
+
+		//tri index 2
+		sPartVerts[curVert].mPositionTex.xyz	=p.mPositionSize.xyz;
+		sPartVerts[curVert].mPositionTex.w		=0;						//texcoord x
+
+		sPartVerts[curVert].mTexSizeRotBlank.x	=0;						//texcoord y
+		sPartVerts[curVert].mTexSizeRotBlank.y	=p.mPositionSize.w;		//size
+		sPartVerts[curVert].mTexSizeRotBlank.z	=p.mVelocityRot.w;		//rotation
+		sPartVerts[curVert].mTexSizeRotBlank.w	=0;						//unused
+
+		sPartVerts[curVert].mColor	=p.mColor;
+
+		curVert++;
+
+		//tri2 index 0
+		sPartVerts[curVert].mPositionTex.xyz	=p.mPositionSize.xyz;
+		sPartVerts[curVert].mPositionTex.w		=1;						//texcoord x
+
+		sPartVerts[curVert].mTexSizeRotBlank.x	=1;						//texcoord y
+		sPartVerts[curVert].mTexSizeRotBlank.y	=p.mPositionSize.w;		//size
+		sPartVerts[curVert].mTexSizeRotBlank.z	=p.mVelocityRot.w;		//rotation
+		sPartVerts[curVert].mTexSizeRotBlank.w	=0;						//unused
+
+		sPartVerts[curVert].mColor	=p.mColor;
+
+		curVert++;
+
+		//tri2 index 1
+		sPartVerts[curVert].mPositionTex.xyz	=p.mPositionSize.xyz;
+		sPartVerts[curVert].mPositionTex.w		=1;						//texcoord x
+
+		sPartVerts[curVert].mTexSizeRotBlank.x	=0;						//texcoord y
+		sPartVerts[curVert].mTexSizeRotBlank.y	=p.mPositionSize.w;		//size
+		sPartVerts[curVert].mTexSizeRotBlank.z	=p.mVelocityRot.w;		//rotation
+		sPartVerts[curVert].mTexSizeRotBlank.w	=0;						//unused
+
+		sPartVerts[curVert].mColor	=p.mColor;
+
+		curVert++;
+
+		//tri2 index 2
+		sPartVerts[curVert].mPositionTex.xyz	=p.mPositionSize.xyz;
+		sPartVerts[curVert].mPositionTex.w		=0;						//texcoord x
+
+		sPartVerts[curVert].mTexSizeRotBlank.x	=1;						//texcoord y
+		sPartVerts[curVert].mTexSizeRotBlank.y	=p.mPositionSize.w;		//size
+		sPartVerts[curVert].mTexSizeRotBlank.z	=p.mVelocityRot.w;		//rotation
+		sPartVerts[curVert].mTexSizeRotBlank.w	=0;						//unused
+
+		sPartVerts[curVert].mColor	=p.mColor;
+
+		curVert++;
+	}
+}
+
+//ps input
+struct ParticlePSIn
+{
+	float4	Position	: SV_POSITION;
+	float4	TexCoord0	: TEXCOORD0;
+	float4	TexCoord1	: TEXCOORD1;
+};
+
+ParticlePSIn ParticleSBVS(uint ID : SV_VertexID)
+{
+	ParticlePSIn	output;
+
+	ParticleVert	pv	=VSParticles[ID];
+
+	float2	uv		=float2(pv.mPositionTex.w, -pv.mTexSizeRotBlank.x);
+	float	size	=pv.mTexSizeRotBlank.y;
+
+	//copy texcoords
+	output.TexCoord0.xy	=uv;
+
+	//copy color
+	output.TexCoord1	=pv.mColor;
+
+	float4x4	viewProj	=mul(mView, mProjection);
+
+	//get matrix vectors
+	float3	rightDir	=mView._m00_m10_m20;
+	float3	upDir		=mView._m01_m11_m21;
+	float3	viewDir		=mView._m02_m12_m22;
+
+	//all verts at 000, add instance pos
+	float4	pos	=float4(pv.mPositionTex.xyz, 1);
+	
+	//store distance to eye
+	output.TexCoord0.z	=distance(mEyePos, pos.xyz);
+
+	//w isn't used but shutup warning
+	output.TexCoord0.w	=0;
+
+	//centering offset
+	float3	centering	=-rightDir * size;
+	centering			-=upDir * size;
+	centering			*=0.5;
+
+	//quad offset mul by size stored in tex0.y
+	float4	ofs	=float4(rightDir * uv.x * size, 1);
+	ofs.xyz		+=upDir * uv.y * size;
+
+	//add in centerpoint
+	ofs.xyz	+=pos.xyz;
+
+	//center around pos
+	ofs.xyz	+=centering;
+
+	//screen transformed centerpoint
+	float4	screenPos	=mul(pos, viewProj);
+
+	//screen transformed quad position
+	float4	screenOfs	=mul(ofs, viewProj);
+
+	//subtract the centerpoint to just rotate the offset
+	screenOfs.xyz	-=screenPos.xyz;
+
+	//rotate ofs by rotation stored in tex0.z
+	float	rot		=pv.mTexSizeRotBlank.z;
+	float	cosRot	=cos(rot);
+	float	sinRot	=sin(rot);
+
+	//build a 2D rotation matrix
+	float2x2	rotMat	=float2x2(cosRot, -sinRot, sinRot, cosRot);
+
+	//rotation mul
+	screenOfs.xy	=mul(screenOfs.xy, rotMat);
+
+	screenPos.xyz	+=screenOfs.xyz;
+
+	output.Position	=screenPos;
+
+	return	output;
+}
+
+float4 ParticleSBPS(ParticlePSIn input) : SV_Target
+{
+	//texture
+	float4	texel	=mTexture0.Sample(Tex0Sampler, input.TexCoord0.xy);
+
+	//multiply by color
+	texel	*=input.TexCoord1;
+
+	return	texel;
 }

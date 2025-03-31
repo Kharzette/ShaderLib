@@ -47,7 +47,7 @@ VVPosTex04Tex14Tex24Tex34 WNormWPosTexFactVS(VPosNormTex04Tex14 input)
 	output.TexCoord3		=input.TexCoord1;	//4 texture factors (adds to 1)
 
 	//store fog factor
-	output.TexCoord0.w	=ComputeFogFactor(length(worldPos - mEyePos));
+	output.TexCoord0.w	=ComputeFogFactor(length(worldPos.xyz - mEyePos.xyz));
 	output.TexCoord1.w	=0;
 	
 	//return the output structure

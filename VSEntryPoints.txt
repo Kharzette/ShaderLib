@@ -43,3 +43,5 @@ TextMode.hlsl
 Terrain.hlsl
 	WNormWPosTexFactVS
 	SkyBoxVS
+Particles.hlsl
+	ParticleSBVS
