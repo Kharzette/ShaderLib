@@ -269,6 +269,22 @@ Particle	Emit(int seedInt)
 	return	ret;
 }
 
+ParticleVert	sMakePartVert(Particle p, float2 tex)
+{
+	ParticleVert	ret	=(ParticleVert)0;
+
+	ret.mPositionTex.xyz	=p.mPositionSize.xyz;
+	ret.mPositionTex.w		=tex.x;					//texcoord x
+
+	ret.mTexSizeRotBlank.x	=tex.y;					//texcoord y
+	ret.mTexSizeRotBlank.y	=p.mPositionSize.w;		//size
+	ret.mTexSizeRotBlank.z	=p.mVelocityRot.w;		//rotation
+
+	ret.mColor	=p.mColor;
+
+	return	ret;
+}
+
 
 [numthreads(1, 1, 1)]
 void ParticleEmitter(uint3 dtID : SV_DispatchThreadID)
@@ -349,83 +365,13 @@ void ParticleEmitter(uint3 dtID : SV_DispatchThreadID)
 			continue;
 		}
 
-		//tri index 0
-		sPartVerts[curVert].mPositionTex.xyz	=p.mPositionSize.xyz;
-		sPartVerts[curVert].mPositionTex.w		=0;						//texcoord x
+		sPartVerts[curVert++]	=sMakePartVert(p, float2(0, 1));
+		sPartVerts[curVert++]	=sMakePartVert(p, float2(1, 0));
+		sPartVerts[curVert++]	=sMakePartVert(p, float2(0, 0));
 
-		sPartVerts[curVert].mTexSizeRotBlank.x	=1;						//texcoord y
-		sPartVerts[curVert].mTexSizeRotBlank.y	=p.mPositionSize.w;		//size
-		sPartVerts[curVert].mTexSizeRotBlank.z	=p.mVelocityRot.w;		//rotation
-		sPartVerts[curVert].mTexSizeRotBlank.w	=0;						//unused
-
-		sPartVerts[curVert].mColor	=p.mColor;
-
-		curVert++;
-
-		//tri index 1
-		sPartVerts[curVert].mPositionTex.xyz	=p.mPositionSize.xyz;
-		sPartVerts[curVert].mPositionTex.w		=1;						//texcoord x
-
-		sPartVerts[curVert].mTexSizeRotBlank.x	=0;						//texcoord y
-		sPartVerts[curVert].mTexSizeRotBlank.y	=p.mPositionSize.w;		//size
-		sPartVerts[curVert].mTexSizeRotBlank.z	=p.mVelocityRot.w;		//rotation
-		sPartVerts[curVert].mTexSizeRotBlank.w	=0;						//unused
-
-		sPartVerts[curVert].mColor	=p.mColor;
-
-		curVert++;
-
-		//tri index 2
-		sPartVerts[curVert].mPositionTex.xyz	=p.mPositionSize.xyz;
-		sPartVerts[curVert].mPositionTex.w		=0;						//texcoord x
-
-		sPartVerts[curVert].mTexSizeRotBlank.x	=0;						//texcoord y
-		sPartVerts[curVert].mTexSizeRotBlank.y	=p.mPositionSize.w;		//size
-		sPartVerts[curVert].mTexSizeRotBlank.z	=p.mVelocityRot.w;		//rotation
-		sPartVerts[curVert].mTexSizeRotBlank.w	=0;						//unused
-
-		sPartVerts[curVert].mColor	=p.mColor;
-
-		curVert++;
-
-		//tri2 index 0
-		sPartVerts[curVert].mPositionTex.xyz	=p.mPositionSize.xyz;
-		sPartVerts[curVert].mPositionTex.w		=1;						//texcoord x
-
-		sPartVerts[curVert].mTexSizeRotBlank.x	=1;						//texcoord y
-		sPartVerts[curVert].mTexSizeRotBlank.y	=p.mPositionSize.w;		//size
-		sPartVerts[curVert].mTexSizeRotBlank.z	=p.mVelocityRot.w;		//rotation
-		sPartVerts[curVert].mTexSizeRotBlank.w	=0;						//unused
-
-		sPartVerts[curVert].mColor	=p.mColor;
-
-		curVert++;
-
-		//tri2 index 1
-		sPartVerts[curVert].mPositionTex.xyz	=p.mPositionSize.xyz;
-		sPartVerts[curVert].mPositionTex.w		=1;						//texcoord x
-
-		sPartVerts[curVert].mTexSizeRotBlank.x	=0;						//texcoord y
-		sPartVerts[curVert].mTexSizeRotBlank.y	=p.mPositionSize.w;		//size
-		sPartVerts[curVert].mTexSizeRotBlank.z	=p.mVelocityRot.w;		//rotation
-		sPartVerts[curVert].mTexSizeRotBlank.w	=0;						//unused
-
-		sPartVerts[curVert].mColor	=p.mColor;
-
-		curVert++;
-
-		//tri2 index 2
-		sPartVerts[curVert].mPositionTex.xyz	=p.mPositionSize.xyz;
-		sPartVerts[curVert].mPositionTex.w		=0;						//texcoord x
-
-		sPartVerts[curVert].mTexSizeRotBlank.x	=1;						//texcoord y
-		sPartVerts[curVert].mTexSizeRotBlank.y	=p.mPositionSize.w;		//size
-		sPartVerts[curVert].mTexSizeRotBlank.z	=p.mVelocityRot.w;		//rotation
-		sPartVerts[curVert].mTexSizeRotBlank.w	=0;						//unused
-
-		sPartVerts[curVert].mColor	=p.mColor;
-
-		curVert++;
+		sPartVerts[curVert++]	=sMakePartVert(p, float2(1, 1));
+		sPartVerts[curVert++]	=sMakePartVert(p, float2(1, 0));
+		sPartVerts[curVert++]	=sMakePartVert(p, float2(0, 1));
 	}
 }
 
