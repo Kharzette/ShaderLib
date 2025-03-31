@@ -48,10 +48,10 @@ cbuffer EmitterCB : register(b11)
 struct EmitterValues
 {
 	float	mTime;			//remainder
-	int		mNumParticles;	//number active
-	int		mLast;			//last particle index
-	int		mNextFree;		//for allocing particles
-	int		mLastActive;	//counts up during iteration
+	uint	mNumParticles;	//number active
+	uint	mLast;			//last particle index
+	uint	mNextFree;		//for allocing particles
+	uint	mLastActive;	//counts up during iteration
 };
 
 //particle vertices for drawing
@@ -82,31 +82,37 @@ void	DeAllocateIndex(int idx)
 {
 	sParticles[idx].mNext	=sEmitterValues[0].mNextFree;
 
-	sEmitterValues[0].mNextFree	=idx;
-	
-	sEmitterValues[0].mNumParticles--;
+//	sEmitterValues[0].mNextFree	=idx;
+	//really just want the store
+	InterlockedCompareStore(sEmitterValues[0].mNextFree, sEmitterValues[0].mNextFree, idx);
+
+	InterlockedAdd(sEmitterValues[0].mNumParticles, -1);
 }
 
 //alloc spots in the particle array
 int	GetNextFreeIndex()
 {
-	int	nextFree	=sEmitterValues[0].mNextFree;
+	uint	nextFree	=sEmitterValues[0].mNextFree;
 
 	if(sParticles[nextFree].mNext)
 	{
-		sEmitterValues[0].mNextFree	=sParticles[nextFree].mNext;
+		InterlockedCompareStore(sEmitterValues[0].mNextFree, sEmitterValues[0].mNextFree, sParticles[nextFree].mNext);
+//		sEmitterValues[0].mNextFree	=sParticles[nextFree].mNext;
 	}
 	else
 	{
-		sEmitterValues[0].mNextFree++;
+		InterlockedAdd(sEmitterValues[0].mNextFree, 1);
+//		sEmitterValues[0].mNextFree++;
 	}
 
-	if(nextFree > sEmitterValues[0].mLast)
-	{
-		sEmitterValues[0].mLast	=nextFree;
-	}
+//	if(nextFree > sEmitterValues[0].mLast)
+//	{
+//		sEmitterValues[0].mLast	=nextFree;
+//	}
+	InterlockedMax(sEmitterValues[0].mLast, nextFree);
 
-	sEmitterValues[0].mNumParticles++;
+//	sEmitterValues[0].mNumParticles++;
+	InterlockedAdd(sEmitterValues[0].mNumParticles, 1);
 
 	return	nextFree;
 }
@@ -285,44 +291,78 @@ ParticleVert	sMakePartVert(Particle p, float2 tex)
 	return	ret;
 }
 
+void	UpdateLoop(uint idx, float deltaTime)
+{
+	//update any existing particles
+	Particle	p	=sParticles[idx];
+
+	//life expired?
+	if(p.mLifeRSVels.x <= 0.0f)
+	{
+		return;
+	}
+
+	//subtract deltatime
+	p.mLifeRSVels.x	-=deltaTime;
+	if(p.mLifeRSVels.x < 0.0f)
+	{
+		DeAllocateIndex(idx);
+
+		//copy the expired life value
+		sParticles[idx].mLifeRSVels.x	=p.mLifeRSVels.x;
+		return;
+	}
+
+//	sEmitterValues[0].mLastActive	=i;
+	//last active counts up the biggest index
+	InterlockedMax(sEmitterValues[0].mLastActive, idx);
+
+	p.mPositionSize.xyz	+=(p.mVelocityRot.xyz * deltaTime);
+	p.mColor			+=(p.mColorVelocity * deltaTime);
+	p.mPositionSize.w	+=(p.mLifeRSVels.z * deltaTime);
+	p.mVelocityRot.w	+=(p.mLifeRSVels.y * deltaTime);
+
+	p.mColor	=clamp(p.mColor, half4(0,0,0,0), half4(1,1,1,1));
+
+	//copy changes back into the array
+	sParticles[idx]	=p;
+}
+
+//must match particleboss
+#define	THREADX	32
+
+[numthreads(THREADX, 1, 1)]
+void UpdateExistingParticles(uint3 dtID : SV_DispatchThreadID)
+{
+	uint	thread	=dtID.x;
+	float	dt		=mSizeVMinMaxSecDelta.w;
+
+	uint	lastActive	=sEmitterValues[0].mLast;
+	if(lastActive < THREADX)
+	{
+		UpdateLoop(thread, dt);
+		return;
+	}
+
+	uint	slice	=lastActive / THREADX;
+	uint	ofs		=slice * thread;
+
+//	for(int i=0;i <= lastActive;i++)
+
+	for(uint i=ofs;i < (ofs + slice);i++)
+	{
+		UpdateLoop(i, dt);
+	}
+
+	//remainder?
+
+}
+
 
 [numthreads(1, 1, 1)]
-void ParticleEmitter(uint3 dtID : SV_DispatchThreadID)
+void UpdateEmitter(uint3 dtID : SV_DispatchThreadID)
 {
 	float	dt	=mSizeVMinMaxSecDelta.w;
-
-	for(int i=0;i <= sEmitterValues[0].mLast;i++)
-	{
-		//update any existing particles
-		Particle	p	=sParticles[i];
-
-		if(p.mLifeRSVels.x <= 0.0f)
-		{
-			continue;
-		}
-
-		//TODO: use passed in delta time
-		p.mLifeRSVels.x	-=dt;
-		if(p.mLifeRSVels.x < 0.0f)
-		{
-			DeAllocateIndex(i);
-
-			//copy the expired life value
-			sParticles[i].mLifeRSVels.x	=p.mLifeRSVels.x;
-			continue;
-		}
-
-		sEmitterValues[0].mLastActive	=i;
-
-		p.mPositionSize.xyz	+=(p.mVelocityRot.xyz * dt);
-		p.mColor			+=(p.mColorVelocity * dt);
-		p.mPositionSize.w	+=(p.mLifeRSVels.z * dt);
-		p.mVelocityRot.w	+=(p.mLifeRSVels.y * dt);
-
-		p.mColor	=clamp(p.mColor, half4(0,0,0,0), half4(1,1,1,1));
-
-		sParticles[i]	=p;
-	}
 
 	sEmitterValues[0].mLast	=sEmitterValues[0].mLastActive;
 
@@ -354,8 +394,8 @@ void ParticleEmitter(uint3 dtID : SV_DispatchThreadID)
 	}
 
 	//crap out a VB to draw
-	int	curVert	=0;
-	for(int j=0;j <= sEmitterValues[0].mLast;j++)
+	uint	curVert	=0;
+	for(uint j=0;j <= sEmitterValues[0].mLast;j++)
 	{
 		//update any existing particles
 		Particle	p	=sParticles[j];
@@ -364,6 +404,14 @@ void ParticleEmitter(uint3 dtID : SV_DispatchThreadID)
 		{
 			continue;
 		}
+
+//		sPartVerts.Append(sMakePartVert(p, float2(0, 1)));
+//		sPartVerts.Append(sMakePartVert(p, float2(1, 0)));
+//		sPartVerts.Append(sMakePartVert(p, float2(0, 0)));
+
+//		sPartVerts.Append(sMakePartVert(p, float2(1, 1)));
+//		sPartVerts.Append(sMakePartVert(p, float2(1, 0)));
+//		sPartVerts.Append(sMakePartVert(p, float2(0, 1)));
 
 		sPartVerts[curVert++]	=sMakePartVert(p, float2(0, 1));
 		sPartVerts[curVert++]	=sMakePartVert(p, float2(1, 0));
