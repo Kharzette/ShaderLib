@@ -1,7 +1,6 @@
 #include	"lygia/generative/random.hlsl"
 #include	"CommonFunctions.hlsli"
 
-#define	DELTATIME			(1.0f / 60.0f)
 #define	EMIT_SHAPE_POINT	0
 #define	EMIT_SHAPE_SPHERE	1
 #define	EMIT_SHAPE_BOX		2
@@ -45,74 +44,61 @@ cbuffer EmitterCB : register(b11)
 									//seconds, rdelta
 };
 
-struct EmitterValues
-{
-	float	mTime;			//remainder
-	uint	mNumParticles;	//number active
-	uint	mLast;			//last particle index
-	uint	mNextFree;		//for allocing particles
-	uint	mLastActive;	//counts up during iteration
-};
 
-//particle vertices for drawing
-//these are fed to ParticleVS in 2D.hlsl
-//as VPos4Tex04Tex14
-struct ParticleVert
-{
-	float4	mPositionTex;		//position, UV.x in w
-	float4	mTexSizeRotBlank;	//UV.Y, size, rot
-	float4	mColor;
-};
+//indexes into emitter values uint array
+//these are arguments to the DrawInstanced call
+#define	VERT_COUNT_PER_INSTANCE_IDX	0
+#define	INSTANCE_COUNT_IDX			1
+#define	START_VERT_INDEX_IDX		2
+#define	START_INSTANCE_INDEX_IDX	3
+#define	TIME_IDX					4
+#define	NUM_PARTICLES_IDX			5
+#define	LAST_IDX					6
+#define	NEXT_FREE_IDX				7
+#define	LAST_ACTIVE_IDX				8
+
 
 //created here and updated here
 RWStructuredBuffer<Particle>	sParticles : register(u0);
 
-//stuff that changes over time
-RWStructuredBuffer<EmitterValues>	sEmitterValues : register(u1);
+//This stores emitter values that change frame to frame
+//and also the arguments for the drawcall
+RWStructuredBuffer<uint>	sEmitterValues : register(u1);
 
-//spat out to feed to vertex shader
-RWStructuredBuffer<ParticleVert>	sPartVerts : register(u2);
-
-//same verts in srv format
-StructuredBuffer<ParticleVert>	VSParticles : register(t2);
+//SRV of sParticles so the vertex shader can access it
+StructuredBuffer<Particle>	VSParticles : register(t2);
 
 
 //dealloc spots in the particle array
 void	DeAllocateIndex(int idx)
 {
-	sParticles[idx].mNext	=sEmitterValues[0].mNextFree;
+	sParticles[idx].mNext	=sEmitterValues[NEXT_FREE_IDX];
 
-//	sEmitterValues[0].mNextFree	=idx;
 	//really just want the store
-	InterlockedCompareStore(sEmitterValues[0].mNextFree, sEmitterValues[0].mNextFree, idx);
+	InterlockedCompareStore(sEmitterValues[NEXT_FREE_IDX],
+		sEmitterValues[NEXT_FREE_IDX], idx);
 
-	InterlockedAdd(sEmitterValues[0].mNumParticles, -1);
+	InterlockedAdd(sEmitterValues[NUM_PARTICLES_IDX], -1);
 }
 
 //alloc spots in the particle array
 int	GetNextFreeIndex()
 {
-	uint	nextFree	=sEmitterValues[0].mNextFree;
+	uint	nextFree	=sEmitterValues[NEXT_FREE_IDX];
 
 	if(sParticles[nextFree].mNext)
 	{
-		InterlockedCompareStore(sEmitterValues[0].mNextFree, sEmitterValues[0].mNextFree, sParticles[nextFree].mNext);
-//		sEmitterValues[0].mNextFree	=sParticles[nextFree].mNext;
+		InterlockedCompareStore(sEmitterValues[NEXT_FREE_IDX],
+			sEmitterValues[NEXT_FREE_IDX], sParticles[nextFree].mNext);
 	}
 	else
 	{
-		InterlockedAdd(sEmitterValues[0].mNextFree, 1);
-//		sEmitterValues[0].mNextFree++;
+		InterlockedAdd(sEmitterValues[NEXT_FREE_IDX], 1);
 	}
 
-//	if(nextFree > sEmitterValues[0].mLast)
-//	{
-//		sEmitterValues[0].mLast	=nextFree;
-//	}
-	InterlockedMax(sEmitterValues[0].mLast, nextFree);
+	InterlockedMax(sEmitterValues[LAST_IDX], nextFree);
 
-//	sEmitterValues[0].mNumParticles++;
-	InterlockedAdd(sEmitterValues[0].mNumParticles, 1);
+	InterlockedAdd(sEmitterValues[NUM_PARTICLES_IDX], 1);
 
 	return	nextFree;
 }
@@ -275,22 +261,6 @@ Particle	Emit(int seedInt)
 	return	ret;
 }
 
-ParticleVert	sMakePartVert(Particle p, float2 tex)
-{
-	ParticleVert	ret	=(ParticleVert)0;
-
-	ret.mPositionTex.xyz	=p.mPositionSize.xyz;
-	ret.mPositionTex.w		=tex.x;					//texcoord x
-
-	ret.mTexSizeRotBlank.x	=tex.y;					//texcoord y
-	ret.mTexSizeRotBlank.y	=p.mPositionSize.w;		//size
-	ret.mTexSizeRotBlank.z	=p.mVelocityRot.w;		//rotation
-
-	ret.mColor	=p.mColor;
-
-	return	ret;
-}
-
 void	UpdateLoop(uint idx, float deltaTime)
 {
 	//update any existing particles
@@ -313,9 +283,8 @@ void	UpdateLoop(uint idx, float deltaTime)
 		return;
 	}
 
-//	sEmitterValues[0].mLastActive	=i;
 	//last active counts up the biggest index
-	InterlockedMax(sEmitterValues[0].mLastActive, idx);
+	InterlockedMax(sEmitterValues[LAST_ACTIVE_IDX], idx);
 
 	p.mPositionSize.xyz	+=(p.mVelocityRot.xyz * deltaTime);
 	p.mColor			+=(p.mColorVelocity * deltaTime);
@@ -337,7 +306,7 @@ void UpdateExistingParticles(uint3 dtID : SV_DispatchThreadID)
 	uint	thread	=dtID.x;
 	float	dt		=mSizeVMinMaxSecDelta.w;
 
-	uint	lastActive	=sEmitterValues[0].mLast;
+	uint	lastActive	=sEmitterValues[LAST_IDX];
 	if(lastActive < THREADX)
 	{
 		UpdateLoop(thread, dt);
@@ -347,41 +316,46 @@ void UpdateExistingParticles(uint3 dtID : SV_DispatchThreadID)
 	uint	slice	=lastActive / THREADX;
 	uint	ofs		=slice * thread;
 
-//	for(int i=0;i <= lastActive;i++)
-
 	for(uint i=ofs;i < (ofs + slice);i++)
 	{
 		UpdateLoop(i, dt);
 	}
 
-	//remainder?
+	//TODO: remainder?
 
 }
 
-
+//this is hard to paralleleleleleleelize, maybe better on cpu?
 [numthreads(1, 1, 1)]
 void UpdateEmitter(uint3 dtID : SV_DispatchThreadID)
 {
 	float	dt	=mSizeVMinMaxSecDelta.w;
 
-	sEmitterValues[0].mLast	=sEmitterValues[0].mLastActive;
+	sEmitterValues[LAST_IDX]	=sEmitterValues[LAST_ACTIVE_IDX];
+
+	//TIME_IDX would be nice to have as a float
+	//but the UAV creation would always fail when
+	//using a struct instead of <uint>, so scale up
+	//the value to nanoseconds or something
+	uint	dtNano		=dt * 100000.0f;
+	uint	freqNano	=mLineAxisFreq.w * 100000.0f;
 
 	//update emitter if on
 	//this might create new particles
 	if(mShapeMaxPEOn.w)
 	{
-		sEmitterValues[0].mTime	+=dt;
+		sEmitterValues[TIME_IDX]	+=dtNano;
 
 		//check frequency
-		while(sEmitterValues[0].mTime > mLineAxisFreq.w)
+		while(sEmitterValues[TIME_IDX] > freqNano)
 		{
-			int	numActive	=sEmitterValues[0].mNumParticles;
+			int	numActive	=sEmitterValues[NUM_PARTICLES_IDX];
 
 			//max particles?
 			if(numActive >= mShapeMaxPEOn.y)
 			{
 				//arrays are full
-				sEmitterValues[0].mTime	-=mLineAxisFreq.w;
+				sEmitterValues[TIME_IDX]	-=freqNano;
 				continue;
 			}
 
@@ -389,38 +363,15 @@ void UpdateEmitter(uint3 dtID : SV_DispatchThreadID)
 
 			sParticles[idx]	=Emit(numActive);
 
-			sEmitterValues[0].mTime	-=mLineAxisFreq.w;
+			sEmitterValues[TIME_IDX]	-=freqNano;
 		}
 	}
 
-	//crap out a VB to draw
-	uint	curVert	=0;
-	for(uint j=0;j <= sEmitterValues[0].mLast;j++)
-	{
-		//update any existing particles
-		Particle	p	=sParticles[j];
-
-		if(p.mLifeRSVels.x <= 0.0f)
-		{
-			continue;
-		}
-
-//		sPartVerts.Append(sMakePartVert(p, float2(0, 1)));
-//		sPartVerts.Append(sMakePartVert(p, float2(1, 0)));
-//		sPartVerts.Append(sMakePartVert(p, float2(0, 0)));
-
-//		sPartVerts.Append(sMakePartVert(p, float2(1, 1)));
-//		sPartVerts.Append(sMakePartVert(p, float2(1, 0)));
-//		sPartVerts.Append(sMakePartVert(p, float2(0, 1)));
-
-		sPartVerts[curVert++]	=sMakePartVert(p, float2(0, 1));
-		sPartVerts[curVert++]	=sMakePartVert(p, float2(1, 0));
-		sPartVerts[curVert++]	=sMakePartVert(p, float2(0, 0));
-
-		sPartVerts[curVert++]	=sMakePartVert(p, float2(1, 1));
-		sPartVerts[curVert++]	=sMakePartVert(p, float2(1, 0));
-		sPartVerts[curVert++]	=sMakePartVert(p, float2(0, 1));
-	}
+	//set up the draw call
+	sEmitterValues[VERT_COUNT_PER_INSTANCE_IDX]	=sEmitterValues[LAST_IDX] * 6;
+	sEmitterValues[INSTANCE_COUNT_IDX]			=1;
+	sEmitterValues[START_VERT_INDEX_IDX]		=0;
+	sEmitterValues[START_INSTANCE_INDEX_IDX]	=0;
 }
 
 //ps input
@@ -431,20 +382,55 @@ struct ParticlePSIn
 	float4	TexCoord1	: TEXCOORD1;
 };
 
+//this should be called with emitter.mLast * 6
+//some expired particles will be in the data
 ParticlePSIn ParticleSBVS(uint ID : SV_VertexID)
 {
-	ParticlePSIn	output;
+	ParticlePSIn	output	=(ParticlePSIn)0;
 
-	ParticleVert	pv	=VSParticles[ID];
+	uint	partIdx	=ID / 6;
+	uint	vIdx	=ID % 6;
 
-	float2	uv		=float2(pv.mPositionTex.w, -pv.mTexSizeRotBlank.x);
-	float	size	=pv.mTexSizeRotBlank.y;
+	Particle	p	=VSParticles[partIdx];
+
+	//expired?
+	if(p.mLifeRSVels.x <= 0.0f)
+	{
+		//submit a pixel behind the camera
+		output.Position	=float4(0, 0, -10, -10);
+		return	output;
+	}
+
+	float2	uv		=float2(0, 0);
+	switch(vIdx)
+	{
+		case	0:
+			uv	=float2(0, 0);
+			break;
+		case	1:
+			uv	=float2(1, 0);
+			break;
+		case	2:
+			uv	=float2(0, 1);
+			break;
+		case	3:
+			uv	=float2(0, 1);
+			break;
+		case	4:
+			uv	=float2(1, 0);
+			break;
+		case	5:
+			uv	=float2(1, 1);
+			break;
+	}
+
+	float	size	=p.mPositionSize.w;
 
 	//copy texcoords
 	output.TexCoord0.xy	=uv;
 
 	//copy color
-	output.TexCoord1	=pv.mColor;
+	output.TexCoord1	=p.mColor;
 
 	float4x4	viewProj	=mul(mView, mProjection);
 
@@ -454,10 +440,10 @@ ParticlePSIn ParticleSBVS(uint ID : SV_VertexID)
 	float3	viewDir		=mView._m02_m12_m22;
 
 	//all verts at 000, add instance pos
-	float4	pos	=float4(pv.mPositionTex.xyz, 1);
+	float4	pos	=float4(p.mPositionSize.xyz, 1);
 	
 	//store distance to eye
-	output.TexCoord0.z	=distance(mEyePos, pos.xyz);
+	output.TexCoord0.z	=distance(mEyePos.xyz, pos.xyz);
 
 	//w isn't used but shutup warning
 	output.TexCoord0.w	=0;
@@ -486,8 +472,8 @@ ParticlePSIn ParticleSBVS(uint ID : SV_VertexID)
 	//subtract the centerpoint to just rotate the offset
 	screenOfs.xyz	-=screenPos.xyz;
 
-	//rotate ofs by rotation stored in tex0.z
-	float	rot		=pv.mTexSizeRotBlank.z;
+	//rotate ofs by rotation
+	float	rot		=p.mVelocityRot.w;
 	float	cosRot	=cos(rot);
 	float	sinRot	=sin(rot);
 
