@@ -4,6 +4,18 @@
 #include "CommonFunctions.hlsli"
 #include "Cel.hlsli"
 
+#define	NUM_CUSTOM_COLOURS	8
+
+
+//A color table used to replace texture pixels
+//with colours the user wants.  Useful for like
+//the eye colour of a character etc...
+cbuffer CustomColours : register(b9)
+{
+	float4	mCColors[NUM_CUSTOM_COLOURS];
+}
+
+
 //shared pixel shaders
 //just shows the shape for debugging
 float4 FullBrightSkinPS(VVPosTex03 input) : SV_Target
@@ -239,6 +251,50 @@ float4 TriTex0SpecPS(VVPosTex04Tex14 input) : SV_Target
 	specular	=saturate((specular + litColor.xyz) * mSolidColour.xyz);
 
 	return	float4(specular, texColor.w);
+}
+
+//Texture 0, trilight, modulate solid, and specular with colour table
+float4 TriTex0SpecCTablePS(VVPosTex04Tex14 input) : SV_Target
+{
+	float2	tex;
+
+	tex.x	=input.TexCoord0.w;
+	tex.y	=1 - input.TexCoord1.w;
+
+	float4	texColor	=mTexture0.Sample(Tex0Sampler, tex);
+
+	//alpha channel will store a scaled down index
+	uint	idx	=texColor.w * (NUM_CUSTOM_COLOURS + 2);
+
+	//top colour is just the tex colour
+	if(idx != (NUM_CUSTOM_COLOURS + 2))
+	{
+		//bottom index is just a nothing colour
+		idx--;
+
+		texColor	*=mCColors[idx];
+	}
+
+	float3	pnorm	=input.TexCoord0.xyz;
+	float3	wpos	=input.TexCoord1.xyz;
+
+	pnorm	=normalize(pnorm);
+
+	float3	lightDir	=float3(mLightColor0.w, mLightColor1.w, mLightColor2.w);
+	float3	triLight	=ComputeTrilight(pnorm, lightDir,
+							mLightColor0, mLightColor1, mLightColor2);
+
+#if defined(SM2)
+	float3	specular	=ComputeCheapSpecular(wpos, lightDir, pnorm, triLight);
+#else
+	float3	specular	=ComputeGoodSpecular(wpos, lightDir, pnorm, triLight);
+#endif
+
+	float3	litColor	=texColor.xyz * triLight;
+
+	specular	=saturate((specular + litColor.xyz) * mSolidColour.xyz);
+
+	return	float4(specular, 1);
 }
 
 //Texture 0, trilight, Texture 1 emissive, and specular

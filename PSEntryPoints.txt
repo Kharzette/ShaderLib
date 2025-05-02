@@ -14,6 +14,7 @@ Trilight.hlsl
 	TriSolidSpecPS
 	NormalMapTriTex0SolidPS
 	TriTex0SpecPS
+	TriTex0SpecCTablePS
 	TriTex0EM1SpecPS
 	TriCelTex0EM1SpecPS
 	TriCelTex0SpecPS

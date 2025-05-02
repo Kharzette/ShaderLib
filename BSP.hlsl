@@ -19,11 +19,6 @@ cbuffer BSP : register(b4)
 cbuffer BSPDynLightPositions : register(b8)
 {
 	float4	mDynPos[MAX_DYNLIGHTS];		//xyz pos, w range
-}
-
-//dynamic light colours
-cbuffer BSPDynLightColours : register(b9)
-{
 	float4	mDynColor[MAX_DYNLIGHTS];	//colors
 }
 
