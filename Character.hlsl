@@ -13,11 +13,11 @@ cbuffer Character : register(b3)
 
 //functions
 //skinning with a dangly force applied
-VVPosTex03Tex13 ComputeSkinWorldDangly(VPosNormBoneCol0 input, float4x4 bones[MAX_BONES])
+VVPosTex03Tex13 ComputeSkinWorldDangly(VPosNormBoneTexCol input, float4x4 bones[MAX_BONES])
 {
 	VVPosTex03Tex13	output;
 	
-	float4	vertPos	=float4(input.Position, 1);
+	float4	vertPos	=float4(input.PositionU.xyz, 1);
 	
 	//generate view-proj matrix
 	float4x4	vp	=mul(mView, mProjection);
@@ -40,7 +40,7 @@ VVPosTex03Tex13 ComputeSkinWorldDangly(VPosNormBoneCol0 input, float4x4 bones[MA
 	output.Position	=mul(worldPos, vp);
 
 	//skin transform the normal
-	float3	worldNormal	=mul(input.Normal.xyz, skinTransform);
+	float3	worldNormal	=mul(input.NormalV.xyz, skinTransform);
 	
 	//world transform the normal
 	output.TexCoord0	=mul(worldNormal, mWorld);
@@ -49,11 +49,11 @@ VVPosTex03Tex13 ComputeSkinWorldDangly(VPosNormBoneCol0 input, float4x4 bones[MA
 }
 
 //skin pos and normal
-VVPosNorm ComputeSkin(VPosNormBone input, float4x4 bones[MAX_BONES])
+VVPosNorm ComputeSkin(VPosNormBoneTex input, float4x4 bones[MAX_BONES])
 {
 	VVPosNorm	output;
 	
-	float4	vertPos	=float4(input.Position, 1);
+	float4	vertPos	=float4(input.PositionU.xyz, 1);
 	
 	//generate the world-view-proj matrix
 	float4x4	wvp	=mul(mul(mWorld, mView), mProjection);
@@ -68,7 +68,7 @@ VVPosNorm ComputeSkin(VPosNormBone input, float4x4 bones[MAX_BONES])
 	output.Position	=mul(vertPos, wvp);
 
 	//skin transform the normal
-	float3	worldNormal	=mul(input.Normal.xyz, skinTransform);
+	float3	worldNormal	=mul(input.NormalV.xyz, skinTransform);
 	
 	//world transform the normal
 	output.Normal	=mul(worldNormal, mWorld);
@@ -77,7 +77,7 @@ VVPosNorm ComputeSkin(VPosNormBone input, float4x4 bones[MAX_BONES])
 }
 
 //compute the position and color of a skinned vert
-VVPosCol0 ComputeSkinTrilight(VPosNormBone input, float4x4 bones[MAX_BONES],
+VVPosCol0 ComputeSkinTrilight(VPosNormBoneTex input, float4x4 bones[MAX_BONES],
 							 float3 lightDir, float4 c0, float4 c1, float4 c2)
 {
 	VVPosCol0	output;
@@ -91,11 +91,11 @@ VVPosCol0 ComputeSkinTrilight(VPosNormBone input, float4x4 bones[MAX_BONES],
 }
 
 //skin with world info
-VVPosTex03Tex13 ComputeSkinWorld(VPosNormBone input, float4x4 bones[MAX_BONES])
+VVPosTex03Tex13 ComputeSkinWorld(VPosNormBoneTex input, float4x4 bones[MAX_BONES])
 {
 	VVPosTex03Tex13	output;
 	
-	float4	vertPos	=float4(input.Position, 1);
+	float4	vertPos	=float4(input.PositionU.xyz, 1);
 	
 	//generate view-proj matrix
 	float4x4	vp	=mul(mView, mProjection);
@@ -114,7 +114,7 @@ VVPosTex03Tex13 ComputeSkinWorld(VPosNormBone input, float4x4 bones[MAX_BONES])
 	output.Position	=mul(worldPos, vp);
 
 	//skin transform the normal
-	float3	worldNormal	=mul(input.Normal.xyz, skinTransform);
+	float3	worldNormal	=mul(input.NormalV.xyz, skinTransform);
 	
 	//world transform the normal
 	output.TexCoord0	=mul(worldNormal, mWorld);
@@ -123,96 +123,44 @@ VVPosTex03Tex13 ComputeSkinWorld(VPosNormBone input, float4x4 bones[MAX_BONES])
 }
 
 
-//vertex shaders
-//depth material normal
-VVPosTex03Tex13 DMNVS(VPosNormBone input)
-{
-	return	ComputeSkinWorld(input, mBones);
-}
-
-//dangly depth
-VVPosTex03Tex13 DMNDanglyVS(VPosNormBoneCol0 input)
-{
-	return	ComputeSkinWorldDangly(input, mBones);
-}
-
-//skin to world normal
-VVPosTex03 SkinWNormVS(VPosNormBone input)
-{
-	return	ComputeSkin(input, mBones);
-}
-
-//skin world norm and pos
-VVPosTex03Tex13 SkinWNormWPosVS(VPosNormBone input)
-{
-	return	ComputeSkinWorld(input, mBones);
-}
+//the vertex shaders here use a variety of different formats...
+//each one will use t0 and be above the code that uses it
+StructuredBuffer<VPosNormBoneTex>	SBPosNormBoneTex : register(t0);
 
 //skin world norm and pos and texcoord
-VVPosTex04Tex14 SkinWNormWPosTex0VS(VPosNormBoneTex0 input)
+VVPosTex04Tex14 SkinWNormWPosTexVS(uint ID : SV_VertexID)
 {
-	VPosNormBone skinny;
+	VPosNormBoneTex	vpn	=SBPosNormBoneTex[ID];
 
-	skinny.Position	=input.Position;
-	skinny.Normal	=input.Normal;
-	skinny.Blend0	=input.Blend0;
-	skinny.Weight0	=input.Weight0;
-
-	VVPosTex03Tex13	skint	=ComputeSkinWorld(skinny, mBones);
+	VVPosTex03Tex13	skint	=ComputeSkinWorld(vpn, mBones);
 
 	VVPosTex04Tex14	output;
 
 	output.Position			=skint.Position;
 	output.TexCoord0.xyz	=skint.TexCoord0.xyz;
 	output.TexCoord1.xyz	=skint.TexCoord1.xyz;
-	output.TexCoord0.w		=input.TexCoord0.x;
-	output.TexCoord1.w		=input.TexCoord0.y;
+
+	//direct copy of texcoords
+	output.TexCoord0.w	=vpn.PositionU.w;
+	output.TexCoord1.w	=vpn.NormalV.w;
 	
 	return	output;
 }
 
-//skin world norm and pos and texcoord with wacky element order
-VVPosTex04Tex14 SkinWNormWPosTex0VS2(VPosNormTex0Bone input)
-{
-	VPosNormBoneTex0	tryThis;
 
-	tryThis.Position	=input.Position;
-	tryThis.Normal		=input.Normal;
-	tryThis.TexCoord0	=input.TexCoord0;
-	tryThis.Blend0		=input.Blend0;
-	tryThis.Weight0		=input.Weight0;
-
-	return	SkinWNormWPosTex0VS(tryThis);
-}
-
-//skin world pos
-VVPosTex03 ShadowSkinWPosVS(VPosNormBone input)
-{
-	float4	vertPos	=float4(input.Position, 1);
-
-	float4x4	skinTransform	=GetSkinXForm(input.Blend0, input.Weight0, mBones);
-
-	vertPos	=mul(vertPos, skinTransform);
-
-	float4	worldVertPos	=mul(vertPos, mWorld);
-
-	VVPosTex03	output;
-
-	output.Position		=mul(worldVertPos, mLightViewProj);
-	output.TexCoord0	=worldVertPos.xyz;
-
-	return	output;
-}
+StructuredBuffer<VPosNormBoneTexCol>	SBPosNormBoneTexCol : register(t0);
 
 //skin, world norm, world pos, vert color
-VVPosTex04Tex14Tex24 SkinWNormWPosColorVS(VPosNormBoneCol0 input)
+VVPosTex04Tex14Tex24 SkinWNormWPosTexColorVS(uint ID : SV_VertexID)
 {
-	VPosNormBone	inSkin;
+	VPosNormBoneTexCol	vpn	=SBPosNormBoneTexCol[ID];
 
-	inSkin.Position	=input.Position;
-	inSkin.Normal	=input.Normal;
-	inSkin.Blend0	=input.Blend0;
-	inSkin.Weight0	=input.Weight0;
+	VPosNormBoneTex	inSkin;
+
+	inSkin.PositionU	=vpn.PositionU;
+	inSkin.NormalV		=vpn.NormalV;
+	inSkin.Blend0		=vpn.Blend0;
+	inSkin.Weight0		=vpn.Weight0;
 
 	VVPosTex03Tex13	skin	=ComputeSkinWorld(inSkin, mBones);
 
@@ -221,18 +169,21 @@ VVPosTex04Tex14Tex24 SkinWNormWPosColorVS(VPosNormBoneCol0 input)
 	ret.Position		=skin.Position;
 	ret.TexCoord0.xyz	=skin.TexCoord0;
 	ret.TexCoord1.xyz	=skin.TexCoord1;
-	ret.TexCoord2		=input.Color;
+	ret.TexCoord2		=vpn.Color;
 
-	ret.TexCoord0.w	=0;
-	ret.TexCoord1.w	=0;
+	//direct copy of texcoords
+	ret.TexCoord0.w	=vpn.PositionU.w;
+	ret.TexCoord1.w	=vpn.NormalV.w;
 
 	return	ret;
 }
 
 //vert color's red multiplies dangliness
-VVPosTex04Tex14 SkinDanglyWnormWPos(VPosNormBoneCol0 input)
+VVPosTex04Tex14 SkinDanglyWnormWPosTexVS(uint ID : SV_VertexID)
 {
-	VVPosTex03Tex13	skin	=ComputeSkinWorldDangly(input, mBones);
+	VPosNormBoneTexCol	vpn	=SBPosNormBoneTexCol[ID];
+
+	VVPosTex03Tex13	skin	=ComputeSkinWorldDangly(vpn, mBones);
 
 	VVPosTex04Tex14	ret;
 
@@ -240,353 +191,41 @@ VVPosTex04Tex14 SkinDanglyWnormWPos(VPosNormBoneCol0 input)
 	ret.TexCoord0.xyz	=skin.TexCoord0;
 	ret.TexCoord1.xyz	=skin.TexCoord1;
 
-	ret.TexCoord0.w	=0;
-	ret.TexCoord1.w	=0;
+	//direct copy of texcoords
+	ret.TexCoord0.w	=vpn.PositionU.w;
+	ret.TexCoord1.w	=vpn.NormalV.w;
 
 	return	ret;
 }
 
-VVPosTex0Col0 SkinTexTriColVS(VPosNormBoneTex0 input)
+
+StructuredBuffer<VPosNormBoneTexIdx>	SBPosNormBoneTexIdx : register(t0);
+
+//skin world norm and pos and texcoord
+WPosWNormTexColorIdx SkinWNormWPosTexIdxVS(uint ID : SV_VertexID)
 {
-	VPosNormBone	skVert;
-	skVert.Position	=input.Position;
-	skVert.Normal	=input.Normal;
-	skVert.Blend0	=input.Blend0;
-	skVert.Weight0	=input.Weight0;
+	VPosNormBoneTexIdx	vpn	=SBPosNormBoneTexIdx[ID];
 
-	float3	lightDir	=float3(mLightColor0.w, mLightColor1.w, mLightColor2.w);
+	VPosNormBoneTex	inSkin;
+
+	inSkin.PositionU	=vpn.PositionU;
+	inSkin.NormalV		=vpn.NormalV;
+	inSkin.Blend0		=vpn.Blend0;
+	inSkin.Weight0		=vpn.Weight0;
+
+	VVPosTex03Tex13	skin	=ComputeSkinWorld(inSkin, mBones);
 	
-	VVPosCol0	singleOut	=ComputeSkinTrilight(skVert, mBones,
-								lightDir, mLightColor0, mLightColor1, mLightColor2);
-	
-	VVPosTex0Col0		output;
-	output.Position		=singleOut.Position;
-	output.TexCoord0	=input.TexCoord0;
-	output.Color		=singleOut.Color;
-	
-	return	output;
-}
+	WPosWNormTexColorIdx	output;
 
-//reordered vert elements
-VVPosTex0Col0 SkinTexTriColVS2(VPosNormTex0Bone input)
-{
-	VPosNormBoneTex0	tryThis;
+	output.Position			=skin.Position;
+	output.WorldPosU.xyz	=skin.TexCoord0.xyz;
+	output.WorldNormalV.xyz	=skin.TexCoord1.xyz;
+	output.Idx				=vpn.Idx;
+	output.Color			=float4(1,1,1,1);
 
-	tryThis.Position	=input.Position;
-	tryThis.Normal		=input.Normal;
-	tryThis.TexCoord0	=input.TexCoord0;
-	tryThis.Blend0		=input.Blend0;
-	tryThis.Weight0		=input.Weight0;
-
-	return	SkinTexTriColVS(tryThis);
-}
-
-//skinned dual texcoord
-VVPosTex0Tex1Col0 SkinTex0Tex1TriColVS(VPosNormBoneTex0Tex1 input)
-{
-	VPosNormBone	skVert;
-	skVert.Position	=input.Position;
-	skVert.Normal	=input.Normal;
-	skVert.Blend0	=input.Blend0;
-	skVert.Weight0	=input.Weight0;
-	
-	float3	lightDir	=float3(mLightColor0.w, mLightColor1.w, mLightColor2.w);
-
-	VVPosCol0	singleOut	=ComputeSkinTrilight(skVert, mBones,
-								lightDir, mLightColor0, mLightColor1, mLightColor2);
-	
-	VVPosTex0Tex1Col0	output;
-	output.Position		=singleOut.Position;
-	output.TexCoord0	=input.TexCoord0;
-	output.TexCoord1	=input.TexCoord1;
-	output.Color		=singleOut.Color;
+	//direct copy of texcoords
+	output.WorldPosU.w		=vpn.PositionU.w;
+	output.WorldNormalV.w	=vpn.NormalV.w;
 	
 	return	output;
 }
-
-/*
-technique10 TriSkinTex0
-{     
-	pass P0
-	{
-#if defined(SM5)
-		VertexShader	=compile vs_5_0 SkinTexTriColVS();
-		PixelShader		=compile ps_5_0 Tex0Col0PS();
-#elif defined(SM41)
-		VertexShader	=compile vs_4_1 SkinTexTriColVS();
-		PixelShader		=compile ps_4_1 Tex0Col0PS();
-#elif defined(SM4)
-		VertexShader	=compile vs_4_0 SkinTexTriColVS();
-		PixelShader		=compile ps_4_0 Tex0Col0PS();
-#else
-		VertexShader	=compile vs_4_0_level_9_3 SkinTexTriColVS();
-		PixelShader		=compile ps_4_0_level_9_3 Tex0Col0PS();
-#endif
-		SetBlendState(NoBlending, float4(0, 0, 0, 0), 0xFFFFFFFF);
-		SetDepthStencilState(EnableDepth, 0);
-	}
-}
-
-technique10 TriSkinCelTex0Spec
-{     
-	pass P0
-	{
-#if defined(SM5)
-		VertexShader	=compile vs_5_0 SkinWNormWPosTex0VS();
-		PixelShader		=compile ps_5_0 TriCelTex0SpecPS();
-#elif defined(SM41)
-		VertexShader	=compile vs_4_1 SkinWNormWPosTex0VS();
-		PixelShader		=compile ps_4_1 TriCelTex0SpecPS();
-#elif defined(SM4)
-		VertexShader	=compile vs_4_0 SkinWNormWPosTex0VS();
-		PixelShader		=compile ps_4_0 TriCelTex0SpecPS();
-#else
-		VertexShader	=compile vs_4_0_level_9_3 SkinWNormWPosTex0VS();
-		PixelShader		=compile ps_4_0_level_9_3 TriCelTex0SpecPS();
-#endif
-		SetBlendState(NoBlending, float4(0, 0, 0, 0), 0xFFFFFFFF);
-		SetDepthStencilState(EnableDepth, 0);
-	}
-}
-
-technique10 TriSkinSolidSpec
-{     
-	pass P0
-	{
-#if defined(SM5)
-		VertexShader	=compile vs_5_0 SkinWNormWPosVS();
-		PixelShader		=compile ps_5_0 TriSolidSpecPS();
-#elif defined(SM41)
-		VertexShader	=compile vs_4_1 SkinWNormWPosVS();
-		PixelShader		=compile ps_4_1 TriSolidSpecPS();
-#elif defined(SM4)
-		VertexShader	=compile vs_4_0 SkinWNormWPosVS();
-		PixelShader		=compile ps_4_0 TriSolidSpecPS();
-#else
-		VertexShader	=compile vs_4_0_level_9_3 SkinWNormWPosVS();
-		PixelShader		=compile ps_4_0_level_9_3 TriSolidSpecPS();
-#endif
-		SetBlendState(NoBlending, float4(0, 0, 0, 0), 0xFFFFFFFF);
-		SetDepthStencilState(EnableDepth, 0);
-	}
-}
-
-technique10 TriSkinCelSolidSpec
-{     
-	pass P0
-	{
-#if defined(SM5)
-		VertexShader	=compile vs_5_0 SkinWNormWPosVS();
-		PixelShader		=compile ps_5_0 TriCelSolidSpecPS();
-#elif defined(SM41)
-		VertexShader	=compile vs_4_1 SkinWNormWPosVS();
-		PixelShader		=compile ps_4_1 TriCelSolidSpecPS();
-#elif defined(SM4)
-		VertexShader	=compile vs_4_0 SkinWNormWPosVS();
-		PixelShader		=compile ps_4_0 TriCelSolidSpecPS();
-#else
-		VertexShader	=compile vs_4_0_level_9_3 SkinWNormWPosVS();
-		PixelShader		=compile ps_4_0_level_9_3 TriCelSolidSpecPS();
-#endif
-		SetBlendState(NoBlending, float4(0, 0, 0, 0), 0xFFFFFFFF);
-		SetDepthStencilState(EnableDepth, 0);
-	}
-}
-
-technique10 TriSkinDanglySolidSpec
-{     
-	pass P0
-	{
-#if defined(SM5)
-		VertexShader	=compile vs_5_0 SkinDanglyWnormWPos();
-		PixelShader		=compile ps_5_0 TriSolidSpecPS();
-#elif defined(SM41)
-		VertexShader	=compile vs_4_1 SkinDanglyWnormWPos();
-		PixelShader		=compile ps_4_1 TriSolidSpecPS();
-#elif defined(SM4)
-		VertexShader	=compile vs_4_0 SkinDanglyWnormWPos();
-		PixelShader		=compile ps_4_0 TriSolidSpecPS();
-#else
-		VertexShader	=compile vs_4_0_level_9_3 SkinDanglyWnormWPos();
-		PixelShader		=compile ps_4_0_level_9_3 TriSolidSpecPS();
-#endif
-		SetBlendState(NoBlending, float4(0, 0, 0, 0), 0xFFFFFFFF);
-		SetDepthStencilState(EnableDepth, 0);
-	}
-}
-
-technique10 TriSkinDanglyCelSolidSpec
-{     
-	pass P0
-	{
-#if defined(SM5)
-		VertexShader	=compile vs_5_0 SkinDanglyWnormWPos();
-		PixelShader		=compile ps_5_0 TriCelSolidSpecPS();
-#elif defined(SM41)
-		VertexShader	=compile vs_4_1 SkinDanglyWnormWPos();
-		PixelShader		=compile ps_4_1 TriCelSolidSpecPS();
-#elif defined(SM4)
-		VertexShader	=compile vs_4_0 SkinDanglyWnormWPos();
-		PixelShader		=compile ps_4_0 TriCelSolidSpecPS();
-#else
-		VertexShader	=compile vs_4_0_level_9_3 SkinDanglyWnormWPos();
-		PixelShader		=compile ps_4_0_level_9_3 TriCelSolidSpecPS();
-#endif
-		SetBlendState(NoBlending, float4(0, 0, 0, 0), 0xFFFFFFFF);
-		SetDepthStencilState(EnableDepth, 0);
-	}
-}
-
-technique10 TriSkinCelColorSpec
-{     
-	pass P0
-	{
-#if defined(SM5)
-		VertexShader	=compile vs_5_0 SkinWNormWPosColorVS();
-		PixelShader		=compile ps_5_0 TriCelColorSpecPS();
-#elif defined(SM41)
-		VertexShader	=compile vs_4_1 SkinWNormWPosColorVS();
-		PixelShader		=compile ps_4_1 TriCelColorSpecPS();
-#elif defined(SM4)
-		VertexShader	=compile vs_4_0 SkinWNormWPosColorVS();
-		PixelShader		=compile ps_4_0 TriCelColorSpecPS();
-#else
-		VertexShader	=compile vs_4_0_level_9_3 SkinWNormWPosColorVS();
-		PixelShader		=compile ps_4_0_level_9_3 TriCelColorSpecPS();
-#endif
-		SetBlendState(NoBlending, float4(0, 0, 0, 0), 0xFFFFFFFF);
-		SetDepthStencilState(EnableDepth, 0);
-	}
-}
-
-technique10 TriSkinDecalTex0
-{     
-	pass P0
-	{
-#if defined(SM5)
-		VertexShader	=compile vs_5_0 SkinTexTriColVS();
-		PixelShader		=compile ps_5_0 Tex0Col0DecalPS();
-#elif defined(SM41)
-		VertexShader	=compile vs_4_1 SkinTexTriColVS();
-		PixelShader		=compile ps_4_1 Tex0Col0DecalPS();
-#elif defined(SM4)
-		VertexShader	=compile vs_4_0 SkinTexTriColVS();
-		PixelShader		=compile ps_4_0 Tex0Col0DecalPS();
-#else
-		VertexShader	=compile vs_4_0_level_9_3 SkinTexTriColVS();
-		PixelShader		=compile ps_4_0_level_9_3 Tex0Col0DecalPS();
-#endif
-		SetBlendState(NoBlending, float4(0, 0, 0, 0), 0xFFFFFFFF);
-		SetDepthStencilState(EnableDepth, 0);
-	}
-}
-
-technique10 TriSkinDecalTex0Tex1
-{     
-	pass P0
-	{
-#if defined(SM5)
-		VertexShader	=compile vs_5_0 SkinTex0Tex1TriColVS();
-		PixelShader		=compile ps_5_0 Tex0Tex1Col0DecalPS();
-#elif defined(SM41)
-		VertexShader	=compile vs_4_1 SkinTex0Tex1TriColVS();
-		PixelShader		=compile ps_4_1 Tex0Tex1Col0DecalPS();
-#elif defined(SM4)
-		VertexShader	=compile vs_4_0 SkinTex0Tex1TriColVS();
-		PixelShader		=compile ps_4_0 Tex0Tex1Col0DecalPS();
-#else
-		VertexShader	=compile vs_4_0_level_9_3 SkinTex0Tex1TriColVS();
-		PixelShader		=compile ps_4_0_level_9_3 Tex0Tex1Col0DecalPS();
-#endif
-		SetBlendState(NoBlending, float4(0, 0, 0, 0), 0xFFFFFFFF);
-		SetDepthStencilState(EnableDepth, 0);
-	}
-}
-
-technique10 FullBrightSkin
-{
-	pass P0
-	{
-#if defined(SM5)
-		VertexShader	=compile vs_5_0 SkinWNormVS();
-		PixelShader		=compile ps_5_0	FullBrightSkinPS();
-#elif defined(SM41)
-		VertexShader	=compile vs_4_1 SkinWNormVS();
-		PixelShader		=compile ps_4_1	FullBrightSkinPS();
-#elif defined(SM4)
-		VertexShader	=compile vs_4_0 SkinWNormVS();
-		PixelShader		=compile ps_4_0	FullBrightSkinPS();
-#else
-		VertexShader	=compile vs_4_0_level_9_3 SkinWNormVS();
-		PixelShader		=compile ps_4_0_level_9_3	FullBrightSkinPS();
-#endif
-		SetBlendState(NoBlending, float4(0, 0, 0, 0), 0xFFFFFFFF);
-		SetDepthStencilState(EnableDepth, 0);
-	}
-}
-
-technique10 ShadowSkin
-{
-	pass P0
-	{
-#if defined(SM5)
-		VertexShader	=compile vs_5_0 ShadowSkinWPosVS();
-		PixelShader		=compile ps_5_0 ShadowPS();
-#elif defined(SM41)
-		VertexShader	=compile vs_4_1 ShadowSkinWPosVS();
-		PixelShader		=compile ps_4_1 ShadowPS();
-#elif defined(SM4)
-		VertexShader	=compile vs_4_0 ShadowSkinWPosVS();
-		PixelShader		=compile ps_4_0 ShadowPS();
-#else
-		VertexShader	=compile vs_4_0_level_9_3 ShadowSkinWPosVS();
-		PixelShader		=compile ps_4_0_level_9_3 ShadowPS();
-#endif
-		SetBlendState(NoBlending, float4(0, 0, 0, 0), 0xFFFFFFFF);
-		SetDepthStencilState(EnableDepth, 0);
-	}
-}
-
-technique10 DMN	//depth material normal
-{
-	pass P0
-	{
-#if defined(SM5)
-		VertexShader	=compile vs_5_0 DMNVS();
-		PixelShader		=compile ps_5_0 DMNPS();
-#elif defined(SM41)
-		VertexShader	=compile vs_4_1 DMNVS();
-		PixelShader		=compile ps_4_1 DMNPS();
-#elif defined(SM4)
-		VertexShader	=compile vs_4_0 DMNVS();
-		PixelShader		=compile ps_4_0 DMNPS();
-#else
-		VertexShader	=compile vs_4_0_level_9_3 DMNVS();
-		PixelShader		=compile ps_4_0_level_9_3 DMNPS();
-#endif
-		SetBlendState(NoBlending, float4(0, 0, 0, 0), 0xFFFFFFFF);
-		SetDepthStencilState(EnableDepth, 0);
-	}
-}
-
-technique10 DMNDangly
-{
-	pass P0
-	{
-#if defined(SM5)
-		VertexShader	=compile vs_5_0 DMNDanglyVS();
-		PixelShader		=compile ps_5_0 DMNPS();
-#elif defined(SM41)
-		VertexShader	=compile vs_4_1 DMNDanglyVS();
-		PixelShader		=compile ps_4_1 DMNPS();
-#elif defined(SM4)
-		VertexShader	=compile vs_4_0 DMNDanglyVS();
-		PixelShader		=compile ps_4_0 DMNPS();
-#else
-		VertexShader	=compile vs_4_0_level_9_3 DMNDanglyVS();
-		PixelShader		=compile ps_4_0_level_9_3 DMNPS();
-#endif
-		SetBlendState(NoBlending, float4(0, 0, 0, 0), 0xFFFFFFFF);
-		SetDepthStencilState(EnableDepth, 0);
-	}
-}*/

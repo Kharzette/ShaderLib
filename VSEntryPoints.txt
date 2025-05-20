@@ -1,27 +1,11 @@
 //This file specifies the various vertex shader programs in each hlsl file
 Static.hlsl
-	WPosVS
-	WNormWPosVS
-	WNormWPosTexVS
-	WNormWPosVColorVS
-	TexTriVS
-	WNormWTanBTanTexVS
-	WNormWTanBTanWPosVS
-	WNormWTanBTanWPosInstancedVS
-	WNormWPosTexVS
+	WNormWPosTexColIdxVS
 Character.hlsl
-	DMNVS
-	DMNDanglyVS
-	SkinWNormVS
-	SkinWNormWPosVS
-	SkinWNormWPosTex0VS
-	SkinWNormWPosTex0VS2
-	ShadowSkinWPosVS
-	SkinWNormWPosColorVS
-	SkinDanglyWnormWPos
-	SkinTexTriColVS
-	SkinTexTriColVS2
-	SkinTex0Tex1TriColVS
+	SkinWNormWPosTexVS
+	SkinWNormWPosTexColorVS
+	SkinDanglyWnormWPosTexVS
+	SkinWNormWPosTexIdxVS
 2D.hlsl
 	TextVS
 	ShapeVS

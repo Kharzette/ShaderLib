@@ -3,173 +3,46 @@
 #include "CommonFunctions.hlsli"
 
 
-//just world position
-VVPosTex03 WPosVS(VPos input)
+void	UnPackStuff(uint4 stuff,
+	out float4 lowVal, out float4 hiVal, out uint idx)
 {
-	float4	vertPos			=float4(input.Position, 1);
-	float4	worldVertPos	=mul(vertPos, mWorld);
+	lowVal	=f16tof32(stuff);
 
-	VVPosTex03	output;
+	stuff	>>=16;
 
-	output.Position		=mul(worldVertPos, mLightViewProj);
-	output.TexCoord0	=worldVertPos.xyz;
+	hiVal	=f16tof32(stuff);
 
-	return	output;
+	idx	=stuff.w;
 }
 
-//worldpos and worldnormal
-VVPosTex03Tex13 WNormWPosVS(VPosNorm input)
-{
-	VVPosTex03Tex13	output;
-
-	//I didn't want to do a full object matrix
-	//but I wanted some squishing and growing
-	//for primitive shapes
-	float3	scalyPos	=input.Position * mLocalScale.xyz;
-
-	//generate the world-view-proj matrix
-	float4x4	wvp	=mul(mul(mWorld, mView), mProjection);
-	
-	//transform the input position to the output
-	output.Position		=mul(float4(scalyPos,1), wvp);
-	output.TexCoord0	=mul(input.Normal.xyz, mWorld);
-	output.TexCoord1	=mul(float4(scalyPos,1), mWorld);
-	
-	//return the output structure
-	return	output;
-}
-
-//worldpos and worldnormal and vert color
-VVPosTex03Tex13Tex23 WNormWPosVColorVS(VPosNormCol0 input)
-{
-	VVPosTex03Tex13Tex23	output;
-	
-	//generate the world-view-proj matrix
-	float4x4	wvp	=mul(mul(mWorld, mView), mProjection);
-	
-	//transform the input position to the output
-	output.Position		=mul(float4(input.Position, 1), wvp);
-	output.TexCoord0	=mul(input.Normal.xyz, mWorld);
-	output.TexCoord1	=mul(float4(input.Position, 1), mWorld);
-	output.TexCoord2	=input.Color;
-	
-	//return the output structure
-	return	output;
-}
-
-//texcoord + trilight color interpolated
-VVPosTex0Col0 TexTriVS(VPosNormTex0 input)
-{
-	VVPosTex0Col0	output;	
-	
-	//generate the world-view-proj matrix
-	float4x4	wvp	=mul(mul(mWorld, mView), mProjection);
-	
-	//transform the input position to the output
-	output.Position	=mul(float4(input.Position, 1), wvp);
-	
-	float3 	worldNormal	=mul(input.Normal.xyz, mWorld);
-	float3	lightDir	=float3(mLightColor0.w, mLightColor1.w, mLightColor2.w);
-
-	output.Color.xyz	=ComputeTrilight(worldNormal, lightDir,
-							mLightColor0, mLightColor1, mLightColor2);
-	output.Color.w		=1.0f;
-	
-	//direct copy of texcoords
-	output.TexCoord0	=input.TexCoord0;
-	
-	//return the output structure
-	return	output;
-}
-
-//tangent stuff
-VVPosNormTanBiTanTex0 WNormWTanBTanTexVS(VPosNormTanTex0 input)
-{
-	VVPosNormTanBiTanTex0	output;
-	
-	//generate the world-view-proj matrix
-	float4x4	wvp	=mul(mul(mWorld, mView), mProjection);
-	
-	output.Position		=mul(float4(input.Position, 1), wvp);
-	output.Normal		=mul(input.Normal.xyz, mWorld);
-	output.Tangent		=mul(input.Tangent.xyz, mWorld);
-	output.TexCoord0	=input.TexCoord0;
-
-	float3	biTan	=cross(input.Normal.xyz, input.Tangent) * input.Tangent.w;
-
-	output.BiTangent	=normalize(biTan);
-
-	//return the output structure
-	return	output;
-}
-
-//packed tangents with worldspace pos
-VVPosTex04Tex14Tex24Tex34 WNormWTanBTanWPosVS(VPosNormTanTex0 input)
-{
-	VVPosTex04Tex14Tex24Tex34	output;
-	
-	//generate the world-view-proj matrix
-	float4x4	wvp	=mul(mul(mWorld, mView), mProjection);
-
-	//pos4
-	//tex2
-	//wtan3
-	//bitan3
-	
-	output.Position			=mul(float4(input.Position, 1), wvp);
-	output.TexCoord0.xyz	=mul(input.Normal.xyz, mWorld);
-	output.TexCoord0.w		=input.TexCoord0.x;
-	output.TexCoord1.xyz	=mul(input.Tangent.xyz, mWorld);
-	output.TexCoord1.w		=input.TexCoord0.y;
-
-	float3	biTan	=cross(input.Normal.xyz, input.Tangent) * input.Tangent.w;
-
-	output.TexCoord2		=float4(normalize(biTan), 0);
-	output.TexCoord3		=mul(input.Position, mWorld);
-
-	//return the output structure
-	return	output;
-}
-
-//packed tangents with worldspace pos and instancing
-VVPosTex04Tex14Tex24Tex34 WNormWTanBTanWPosInstancedVS(VPosNormTanTex0 input, float4x4 instWorld : BLENDWEIGHT)
-{
-	VVPosTex04Tex14Tex24Tex34	output;
-
-	float4x4	world	=transpose(instWorld);
-	
-	//generate the world-view-proj matrix
-	float4x4	wvp	=mul(mul(world, mView), mProjection);
-	
-	output.Position			=mul(float4(input.Position, 1), wvp);
-	output.TexCoord0.xyz	=mul(input.Normal.xyz, world);
-	output.TexCoord0.w		=input.TexCoord0.x;
-	output.TexCoord1.xyz	=mul(input.Tangent.xyz, world);
-	output.TexCoord1.w		=input.TexCoord0.y;
-
-	float3	biTan	=cross(input.Normal, input.Tangent) * input.Tangent.w;
-
-	output.TexCoord2		=float4(normalize(biTan), 0);
-	output.TexCoord3		=mul(input.Position, world);
-
-	//return the output structure
-	return	output;
-}
+//the vertex shaders here use a variety of different formats...
+//each one will use t0 and be above the code that uses it
+StructuredBuffer<VPosNormTexColExpIdx>	SBVert : register(t0);
 
 //worldpos and normal
-VVPosTex04Tex14 WNormWPosTexVS(VPosNormTex0 input)
+WPosWNormTexColorIdx WNormWPosTexColIdxVS(uint ID : SV_VertexID)
 {
-	VVPosTex04Tex14	output;
-	
+	VPosNormTexColExpIdx	vpn	=SBVert[ID];
+
+	WPosWNormTexColorIdx	output;
+
+	float4	norm, col;
+	uint	idx;
+	UnPackStuff(vpn.NormVCol, norm, col, idx);
+
 	//generate the world-view-proj matrix
 	float4x4	wvp	=mul(mul(mWorld, mView), mProjection);
 	
 	//transform the input position to the output
-	output.Position			=mul(float4(input.Position, 1), wvp);
-	output.TexCoord0.xyz	=mul(input.Normal.xyz, mWorld);
-	output.TexCoord1		=mul(float4(input.Position, 1), mWorld);
-	output.TexCoord0.w		=input.TexCoord0.x;
-	output.TexCoord1.w		=input.TexCoord0.y;
+	output.Position		=mul(float4(vpn.PositionU.xyz, 1), wvp);
+	output.WorldNormalV	=mul(norm.xyz, mWorld);
+	output.WorldPosU	=mul(float4(vpn.PositionU.xyz, 1), mWorld);
+	output.Color		=col;
+	output.Idx			=idx;
+
+	//direct copy of texcoords
+	output.WorldPosU.w		=vpn.PositionU.w;
+	output.WorldNormalV.w	=norm.w;
 	
 	//return the output structure
 	return	output;

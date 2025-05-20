@@ -12,11 +12,11 @@ struct VPos
 	float3	Position	: POSITION;
 };
 
-struct VPosNorm
-{
-	float3	Position	: POSITION;
-	half4	Normal		: NORMAL;
-};
+//struct VPosNorm
+//{
+//	float3	Position	: POSITION;
+//	half4	Normal		: NORMAL;
+//};
 
 struct VPosTex0
 {
@@ -142,6 +142,7 @@ struct VPosNormTanTex0
 	half2	TexCoord0	: TEXCOORD0;
 };
 
+/*
 struct VPosNormBone
 {
 	float3	Position	: POSITION;
@@ -153,7 +154,7 @@ struct VPosNormBone
 #endif
 
 	half4	Weight0		: BLENDWEIGHTS0;
-};
+};*/
 
 struct VPosNormTex0Col0
 {
@@ -178,6 +179,7 @@ struct VPosNormCol0
 	half4	Color		: COLOR0;	
 };
 
+/*
 struct VPosNormBoneTex0
 {
 	float3	Position	: POSITION;
@@ -190,7 +192,7 @@ struct VPosNormBoneTex0
 
 	half4	Weight0		: BLENDWEIGHTS0;
 	half2	TexCoord0	: TEXCOORD0;
-};
+};*/
 
 struct VPosNormBoneTex0Tex1
 {
@@ -207,6 +209,7 @@ struct VPosNormBoneTex0Tex1
 	half2	TexCoord1	: TEXCOORD1;
 };
 
+/*
 struct VPosNormBoneCol0
 {
 	float3	Position	: POSITION;
@@ -234,7 +237,7 @@ struct VPosNormBoneTex0Col0
 	half4	Weight0		: BLENDWEIGHTS0;
 	half2	TexCoord0	: TEXCOORD0;
 	half4	Color		: COLOR0;	
-};
+};*/
 
 struct VPosNormTex0Tex1Col0
 {
@@ -579,6 +582,94 @@ struct VVPos93
 {
 	float4	Position	: SV_POSITION;
 	float4	VPos		: VPOS;
+};
+
+//structs for using structured buffers and such
+//eventually can get rid of the above stuff
+struct	VPosNormTex
+{
+	float4		PositionU;	//w has U
+	min16float4	NormalV;	//w has V
+};
+
+struct	VPosNormTexIdx
+{
+	float4		PositionU;	//w has U
+	min16float4	NormalV;	//w has V
+	min16uint	Idx;
+};
+
+struct	VPosNormTexCol
+{
+	float4		PositionU;	//w has U
+	min16float4	NormalV;	//w has V
+	min16float4	Color;
+};
+
+struct	VPosNormTexColExpIdx
+{
+	float4		PositionU;	//w has U
+	uint4		NormVCol;	//packed F16
+};
+
+
+struct	VPosNormBoneTex
+{
+	float4		PositionU;	//w has U
+	min16float4	NormalV;	//w has V
+	min16uint4	Blend0;
+	min16float4	Weight0;
+};
+
+struct	VPosNormBoneTexCol
+{
+	float4		PositionU;	//w has U
+	min16float4	NormalV;	//w has V
+	min16float4	Color;
+	min16uint4	Blend0;
+	min16float4	Weight0;
+};
+
+struct	VPosNormBoneTexIdx
+{
+	float4		PositionU;	//w has U
+	min16float4	NormalV;	//w has V
+	min16uint4	Blend0;
+	min16float4	Weight0;
+	min16uint	Idx;
+};
+
+
+struct	UIVert
+{
+	float2	Position	: POSITION;
+	uint4	ColorTex	: BLENDINDICES;
+};
+
+
+//PS structs
+struct	WPosWNormTexColorIdx
+{
+	float4	Position		: SV_POSITION;
+	half4	WorldPosU		: TEXCOORD0;
+	half4	WorldNormalV	: TEXCOORD1;
+	half4	Color			: COLOR;
+	uint	Idx				: BLENDINDICES;
+};
+
+struct UIPosColTex
+{
+	float4	Position	: SV_POSITION;
+	half4	Color		: COLOR;
+	half4	TexCoord	: TEXCOORD;
+};
+
+struct	PSTest
+{
+	float4	Position	: SV_POSITION;
+	uint4	LowVal		: TEXCOORD0;
+	uint4	HiVal		: TEXCOORD1;
+	uint	Index		: TEXCOORD2;
 };
 
 #endif	//_TYPESFXH

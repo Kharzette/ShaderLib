@@ -9,21 +9,26 @@ float ComputeFogFactor(float d)
 }
 
 
-VVPosTex04Tex14 SkyBoxVS(VPosNormTex0 input)
+StructuredBuffer<VPosNormTex>	SBPosNormTex : register(t0);
+
+VVPosTex04Tex14 SkyBoxVS(uint ID : SV_VertexID)
 {
+	VPosNormTex	vpn	=SBPosNormTex[ID];
+
 	VVPosTex04Tex14	output;
 	
 	float4x4	viewProj	=mul(mView, mProjection);
 
 	//worldpos
-	float4	worldPos	=mul(float4(input.Position, 1), mWorld);
+	float4	worldPos	=mul(float4(vpn.PositionU.xyz, 1), mWorld);
 
 	output.Position			=mul(worldPos, viewProj);
-	output.TexCoord0.xyz	=mul(input.Normal.xyz, mWorld);	
+	output.TexCoord0.xyz	=mul(vpn.NormalV.xyz, mWorld);	
 	output.TexCoord1.xyz	=worldPos;
 
-	output.TexCoord0.w	=0;
-	output.TexCoord1.w	=0;
+	//direct copy of texcoords
+	output.TexCoord0.w	=vpn.PositionU.w;
+	output.TexCoord1.w	=vpn.NormalV.w;
 	
 	//return the output structure
 	return	output;
