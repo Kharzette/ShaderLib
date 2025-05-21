@@ -95,7 +95,7 @@ float4 TriTexPS(WPosWNormTexColorIdx input) : SV_Target
 	float2	tex;
 
 	tex.x	=input.WorldPosU.w;
-	tex.y	=1 - input.WorldNormalV.w;
+	tex.y	=input.WorldNormalV.w;
 
 	float4	texColor	=mTexture0.Sample(Tex0Sampler, tex);
 
@@ -121,7 +121,7 @@ float4 TriCelTexPS(WPosWNormTexColorIdx input) : SV_Target
 	float2	texUV;
 
 	texUV.x	=input.WorldPosU.w;
-	texUV.y	=1 - input.WorldNormalV.w;
+	texUV.y	=input.WorldNormalV.w;
 
 	float4	texColor	=mTexture0.Sample(Tex0Sampler, texUV);
 
@@ -194,7 +194,7 @@ float4 TriTexColorPS(WPosWNormTexColorIdx input) : SV_Target
 	float2	texUV;
 
 	texUV.x	=input.WorldPosU.w;
-	texUV.y	=1 - input.WorldNormalV.w;
+	texUV.y	=input.WorldNormalV.w;
 
 	float4	texel	=mTexture0.Sample(Tex0Sampler, texUV);
 
@@ -220,7 +220,7 @@ float4 TriCelTexColorPS(WPosWNormTexColorIdx input) : SV_Target
 	float2	texUV;
 
 	texUV.x	=input.WorldPosU.w;
-	texUV.y	=1 - input.WorldNormalV.w;
+	texUV.y	=input.WorldNormalV.w;
 
 	float4	texel	=mTexture0.Sample(Tex0Sampler, texUV);
 
@@ -295,7 +295,7 @@ float4 TriTexCTablePS(WPosWNormTexColorIdx input) : SV_Target
 	float2	texUV;
 
 	texUV.x	=input.WorldPosU.w;
-	texUV.y	=1 - input.WorldNormalV.w;
+	texUV.y	=input.WorldNormalV.w;
 
 	float4	texColor	=mTexture0.Sample(Tex0Sampler, texUV);
 	float3	wnorm		=input.WorldNormalV.xyz;
@@ -324,7 +324,7 @@ float4 TriCelTexCTablePS(WPosWNormTexColorIdx input) : SV_Target
 	float2	texUV;
 
 	texUV.x	=input.WorldPosU.w;
-	texUV.y	=1 - input.WorldNormalV.w;
+	texUV.y	=input.WorldNormalV.w;
 
 	float4	texColor	=mTexture0.Sample(Tex0Sampler, texUV);
 	float3	wnorm		=input.WorldNormalV.xyz;

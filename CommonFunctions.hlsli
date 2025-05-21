@@ -129,32 +129,6 @@ float3 ComputeNormalFromMap(float4 sampleNorm, float3 tan, float3 biTan, float3 
 }
 
 
-//ints for > sm2
-float4x4 GetSkinXForm(int4 bnIdxs, half4 bnWeights, float4x4 bones[MAX_BONES])
-{
-	float4x4 skinTransform	=bones[bnIdxs.x] * bnWeights.x;
-
-	skinTransform	+=bones[bnIdxs.y] * bnWeights.y;
-	skinTransform	+=bones[bnIdxs.z] * bnWeights.z;
-	skinTransform	+=bones[bnIdxs.w] * bnWeights.w;
-	
-	return	skinTransform;
-}
-
-
-//look up the skin transform for sm2
-float4x4 GetSkinXForm(half4 bnIdxs, half4 bnWeights, float4x4 bones[MAX_BONES])
-{
-	float4x4 skinTransform	=bones[bnIdxs.x] * bnWeights.x;
-
-	skinTransform	+=bones[bnIdxs.y] * bnWeights.y;
-	skinTransform	+=bones[bnIdxs.z] * bnWeights.z;
-	skinTransform	+=bones[bnIdxs.w] * bnWeights.w;
-	
-	return	skinTransform;
-}
-
-
 //compute the 3 light effects on the vert
 //see http://home.comcast.net/~tom_forsyth/blog.wiki.html
 float3 ComputeTrilight(float3 normal, float3 lightDir, float3 c0, float3 c1, float3 c2)

@@ -15,14 +15,13 @@ void	UnPackStuff(uint4 stuff,
 	idx	=stuff.w;
 }
 
-//the vertex shaders here use a variety of different formats...
-//each one will use t0 and be above the code that uses it
-StructuredBuffer<VPosNormTexColExpIdx>	SBVert : register(t0);
+//standard static format
+StructuredBuffer<VPosNormTexColIdx>	SBVert : register(t0);
 
 //worldpos and normal
-WPosWNormTexColorIdx WNormWPosTexColIdxVS(uint ID : SV_VertexID)
+WPosWNormTexColorIdx StaticVS(uint ID : SV_VertexID)
 {
-	VPosNormTexColExpIdx	vpn	=SBVert[ID];
+	VPosNormTexColIdx	vpn	=SBVert[ID];
 
 	WPosWNormTexColorIdx	output;
 

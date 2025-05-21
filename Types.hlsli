@@ -606,10 +606,20 @@ struct	VPosNormTexCol
 	min16float4	Color;
 };
 
-struct	VPosNormTexColExpIdx
+//this is the standard static format
+//can cram in pos, texcoord, color, and index
+struct	VPosNormTexColIdx
 {
 	float4		PositionU;	//w has U
 	uint4		NormVCol;	//packed F16
+};
+
+
+struct	VPosNormTexColIdxBone
+{
+	float4		PositionU;	//w has U
+	uint4		NormVCol;	//packed F16
+	uint4		Bone;		//indexes and F16 weights
 };
 
 

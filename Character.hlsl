@@ -10,222 +10,108 @@ cbuffer Character : register(b3)
 	float4x4	mBones[MAX_BONES];	
 }
 
+//standard character format
+StructuredBuffer<VPosNormTexColIdxBone>	SBVert : register(t0);
 
 //functions
-//skinning with a dangly force applied
-VVPosTex03Tex13 ComputeSkinWorldDangly(VPosNormBoneTexCol input, float4x4 bones[MAX_BONES])
+void	UnPackNormCol(uint4 squished,
+	out float4 lowVal, out float4 hiVal, out uint idx)
 {
-	VVPosTex03Tex13	output;
-	
-	float4	vertPos	=float4(input.PositionU.xyz, 1);
-	
-	//generate view-proj matrix
-	float4x4	vp	=mul(mView, mProjection);
-	
-	//do the bone influences
-	float4x4 skinTransform	=GetSkinXForm(input.Blend0, input.Weight0, bones);
-	
-	//xform the vert to the character's boney pos
-	vertPos	=mul(vertPos, skinTransform);
-	
-	//transform to world
-	float4	worldPos	=mul(vertPos, mWorld);
+	lowVal	=f16tof32(squished);
 
-	//dangliness
-	worldPos.xyz	-=input.Color.x * mDanglyForceMID.xyz;
+	squished	>>=16;
 
-	output.TexCoord1	=worldPos.xyz;
+	hiVal	=f16tof32(squished);
 
-	//viewproj
-	output.Position	=mul(worldPos, vp);
-
-	//skin transform the normal
-	float3	worldNormal	=mul(input.NormalV.xyz, skinTransform);
-	
-	//world transform the normal
-	output.TexCoord0	=mul(worldNormal, mWorld);
-
-	return	output;
+	idx	=squished.w;
 }
 
-//skin pos and normal
-VVPosNorm ComputeSkin(VPosNormBoneTex input, float4x4 bones[MAX_BONES])
+void	UnPackBone(uint4 squished,
+	out uint4 indexes, out half4 weights)
 {
-	VVPosNorm	output;
-	
-	float4	vertPos	=float4(input.PositionU.xyz, 1);
-	
-	//generate the world-view-proj matrix
-	float4x4	wvp	=mul(mul(mWorld, mView), mProjection);
-	
-	//do the bone influences
-	float4x4 skinTransform	=GetSkinXForm(input.Blend0, input.Weight0, bones);
-	
-	//xform the vert to the character's boney pos
-	vertPos	=mul(vertPos, skinTransform);
-	
-	//transform the input position to the output
-	output.Position	=mul(vertPos, wvp);
+	weights	=f16tof32(squished);
 
-	//skin transform the normal
-	float3	worldNormal	=mul(input.NormalV.xyz, skinTransform);
-	
-	//world transform the normal
-	output.Normal	=mul(worldNormal, mWorld);
+	squished	>>=16;
 
-	return	output;
+	indexes	=squished;
 }
 
-//compute the position and color of a skinned vert
-VVPosCol0 ComputeSkinTrilight(VPosNormBoneTex input, float4x4 bones[MAX_BONES],
-							 float3 lightDir, float4 c0, float4 c1, float4 c2)
+float4x4 GetSkinXForm(uint4 bnIdxs, half4 bnWeights, float4x4 bones[MAX_BONES])
 {
-	VVPosCol0	output;
-	VVPosNorm	skinny	=ComputeSkin(input, bones);
+	float4x4 skinTransform	=bones[bnIdxs.x] * bnWeights.x;
 
-	output.Position		=skinny.Position;	
-	output.Color.xyz	=ComputeTrilight(skinny.Normal.xyz, lightDir, c0, c1, c2);
-	output.Color.w		=1.0;
+	skinTransform	+=bones[bnIdxs.y] * bnWeights.y;
+	skinTransform	+=bones[bnIdxs.z] * bnWeights.z;
+	skinTransform	+=bones[bnIdxs.w] * bnWeights.w;
 	
-	return	output;
+	return	skinTransform;
 }
+
+struct	SkinOut
+{
+	float4	Position;
+	half3	WorldPos;
+	half3	WorldNormal;
+};
 
 //skin with world info
-VVPosTex03Tex13 ComputeSkinWorld(VPosNormBoneTex input, float4x4 bones[MAX_BONES])
+SkinOut	ComputeSkin(float3 pos, half3 norm,
+	uint4 bnIdxs, half4 bnWeights,
+	float4x4 bones[MAX_BONES])
 {
-	VVPosTex03Tex13	output;
+	SkinOut	ret;
 	
-	float4	vertPos	=float4(input.PositionU.xyz, 1);
+	float4	vertPos	=float4(pos, 1);
 	
 	//generate view-proj matrix
 	float4x4	vp	=mul(mView, mProjection);
 	
 	//do the bone influences
-	float4x4 skinTransform	=GetSkinXForm(input.Blend0, input.Weight0, bones);
+	float4x4 skinTransform	=GetSkinXForm(bnIdxs, bnWeights, bones);
 	
 	//xform the vert to the character's boney pos
 	vertPos	=mul(vertPos, skinTransform);
 	
 	//transform to world
 	float4	worldPos	=mul(vertPos, mWorld);
-	output.TexCoord1	=worldPos.xyz;
 
 	//viewproj
-	output.Position	=mul(worldPos, vp);
+	ret.Position	=mul(worldPos, vp);
 
 	//skin transform the normal
-	float3	worldNormal	=mul(input.NormalV.xyz, skinTransform);
+	float3	worldNormal	=mul(norm.xyz, skinTransform);
 	
 	//world transform the normal
-	output.TexCoord0	=mul(worldNormal, mWorld);
-
-	return	output;
-}
-
-
-//the vertex shaders here use a variety of different formats...
-//each one will use t0 and be above the code that uses it
-StructuredBuffer<VPosNormBoneTex>	SBPosNormBoneTex : register(t0);
-
-//skin world norm and pos and texcoord
-VVPosTex04Tex14 SkinWNormWPosTexVS(uint ID : SV_VertexID)
-{
-	VPosNormBoneTex	vpn	=SBPosNormBoneTex[ID];
-
-	VVPosTex03Tex13	skint	=ComputeSkinWorld(vpn, mBones);
-
-	VVPosTex04Tex14	output;
-
-	output.Position			=skint.Position;
-	output.TexCoord0.xyz	=skint.TexCoord0.xyz;
-	output.TexCoord1.xyz	=skint.TexCoord1.xyz;
-
-	//direct copy of texcoords
-	output.TexCoord0.w	=vpn.PositionU.w;
-	output.TexCoord1.w	=vpn.NormalV.w;
-	
-	return	output;
-}
-
-
-StructuredBuffer<VPosNormBoneTexCol>	SBPosNormBoneTexCol : register(t0);
-
-//skin, world norm, world pos, vert color
-VVPosTex04Tex14Tex24 SkinWNormWPosTexColorVS(uint ID : SV_VertexID)
-{
-	VPosNormBoneTexCol	vpn	=SBPosNormBoneTexCol[ID];
-
-	VPosNormBoneTex	inSkin;
-
-	inSkin.PositionU	=vpn.PositionU;
-	inSkin.NormalV		=vpn.NormalV;
-	inSkin.Blend0		=vpn.Blend0;
-	inSkin.Weight0		=vpn.Weight0;
-
-	VVPosTex03Tex13	skin	=ComputeSkinWorld(inSkin, mBones);
-
-	VVPosTex04Tex14Tex24	ret;
-
-	ret.Position		=skin.Position;
-	ret.TexCoord0.xyz	=skin.TexCoord0;
-	ret.TexCoord1.xyz	=skin.TexCoord1;
-	ret.TexCoord2		=vpn.Color;
-
-	//direct copy of texcoords
-	ret.TexCoord0.w	=vpn.PositionU.w;
-	ret.TexCoord1.w	=vpn.NormalV.w;
-
-	return	ret;
-}
-
-//vert color's red multiplies dangliness
-VVPosTex04Tex14 SkinDanglyWnormWPosTexVS(uint ID : SV_VertexID)
-{
-	VPosNormBoneTexCol	vpn	=SBPosNormBoneTexCol[ID];
-
-	VVPosTex03Tex13	skin	=ComputeSkinWorldDangly(vpn, mBones);
-
-	VVPosTex04Tex14	ret;
-
-	ret.Position		=skin.Position;
-	ret.TexCoord0.xyz	=skin.TexCoord0;
-	ret.TexCoord1.xyz	=skin.TexCoord1;
-
-	//direct copy of texcoords
-	ret.TexCoord0.w	=vpn.PositionU.w;
-	ret.TexCoord1.w	=vpn.NormalV.w;
+	ret.WorldNormal	=mul(worldNormal, mWorld);
+	ret.WorldPos	=worldPos;
 
 	return	ret;
 }
 
 
-StructuredBuffer<VPosNormBoneTexIdx>	SBPosNormBoneTexIdx : register(t0);
-
 //skin world norm and pos and texcoord
-WPosWNormTexColorIdx SkinWNormWPosTexIdxVS(uint ID : SV_VertexID)
+WPosWNormTexColorIdx SkinVS(uint ID : SV_VertexID)
 {
-	VPosNormBoneTexIdx	vpn	=SBPosNormBoneTexIdx[ID];
+	VPosNormTexColIdxBone	vpn	=SBVert[ID];
 
-	VPosNormBoneTex	inSkin;
+	float4	norm, col;
+	uint	idx;
+	UnPackNormCol(vpn.NormVCol, norm, col, idx);
 
-	inSkin.PositionU	=vpn.PositionU;
-	inSkin.NormalV		=vpn.NormalV;
-	inSkin.Blend0		=vpn.Blend0;
-	inSkin.Weight0		=vpn.Weight0;
+	uint4	indexes;
+	float4	weights;
+	UnPackBone(vpn.Bone, indexes, weights);
 
-	VVPosTex03Tex13	skin	=ComputeSkinWorld(inSkin, mBones);
-	
+	SkinOut	so	=ComputeSkin(vpn.PositionU.xyz,
+					norm.xyz, indexes, weights, mBones);
+
 	WPosWNormTexColorIdx	output;
 
-	output.Position			=skin.Position;
-	output.WorldPosU.xyz	=skin.TexCoord0.xyz;
-	output.WorldNormalV.xyz	=skin.TexCoord1.xyz;
-	output.Idx				=vpn.Idx;
-	output.Color			=float4(1,1,1,1);
+	output.Position		=so.Position;
+	output.WorldNormalV	=half4(so.WorldNormal.xyz, norm.w);
+	output.WorldPosU	=half4(so.WorldPos.xyz, vpn.PositionU.w);
+	output.Color		=col;
+	output.Idx			=idx;
 
-	//direct copy of texcoords
-	output.WorldPosU.w		=vpn.PositionU.w;
-	output.WorldNormalV.w	=vpn.NormalV.w;
-	
 	return	output;
 }

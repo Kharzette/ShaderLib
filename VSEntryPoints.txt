@@ -1,11 +1,8 @@
 //This file specifies the various vertex shader programs in each hlsl file
 Static.hlsl
-	WNormWPosTexColIdxVS
+	StaticVS
 Character.hlsl
-	SkinWNormWPosTexVS
-	SkinWNormWPosTexColorVS
-	SkinDanglyWnormWPosTexVS
-	SkinWNormWPosTexIdxVS
+	SkinVS
 2D.hlsl
 	TextVS
 	ShapeVS
