@@ -63,7 +63,7 @@ RWStructuredBuffer<Particle>	sParticles : register(u0);
 
 //This stores emitter values that change frame to frame
 //and also the arguments for the drawcall
-RWStructuredBuffer<uint>	sEmitterValues : register(u1);
+RWBuffer<uint>	sEmitterValues : register(u1);
 
 //SRV of sParticles so the vertex shader can access it
 StructuredBuffer<Particle>	VSParticles : register(t2);
