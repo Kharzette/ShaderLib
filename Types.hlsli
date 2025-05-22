@@ -198,6 +198,13 @@ struct	UIVert
 	uint4	ColorTex	: BLENDINDICES;
 };
 
+struct	TerrainVert
+{
+	float4	Position;
+	uint4	TexWeights;	//8 packed F16
+	uint4	NormVCol;	//packed F16
+};
+
 
 //PS structs
 struct	WPosWNormTexColorIdx
@@ -214,5 +221,15 @@ struct UIPosColTex
 	float4	Position	: SV_POSITION;
 	half4	Color		: COLOR;
 	half4	TexCoord	: TEXCOORD;
+};
+
+struct	PSTerrain
+{
+	float4	Position	: SV_POSITION;
+	half4	WorldPosFF	: TEXCOORD0;
+	half4	WorldNormal	: TEXCOORD1;
+	half4	TexWeight0	: TEXCOORD2;
+	half4	TexWeight1	: TEXCOORD3;
+	half4	Color		: COLOR;
 };
 #endif	//_TYPESFXH

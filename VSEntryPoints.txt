@@ -19,7 +19,7 @@ Post.hlsl
 TextMode.hlsl
 	SimpleVS
 Terrain.hlsl
-	WNormWPosTexFactVS
+	TerrainVS
 	SkyBoxVS
 Particles.hlsl
 	ParticleSBVS

@@ -35,25 +35,38 @@ VVPosTex04Tex14 SkyBoxVS(uint ID : SV_VertexID)
 }
 
 
+StructuredBuffer<TerrainVert>	SBTerrain : register(t0);
+
 //worldpos and normal and 8 texture factors newer from C
-VVPosTex04Tex14Tex24Tex34 WNormWPosTexFactVS(VPosNormTex04Tex14 input)
+PSTerrain TerrainVS(uint ID : SV_VertexID)
 {
-	VVPosTex04Tex14Tex24Tex34	output;
+	PSTerrain	output;
+
+	TerrainVert	tv	=SBTerrain[ID];
 	
+	float4	norm, col;
+	UnPackStuff(tv.NormVCol, norm, col);
+
+	float4	tweight0, tweight1;
+	UnPackStuff(tv.TexWeights, tweight0, tweight1);
+
 	float4x4	viewProj	=mul(mView, mProjection);
 
 	//worldpos
-	float4	worldPos	=mul(float4(input.Position, 1), mWorld);
+	float4	worldPos	=mul(float4(tv.Position.xyz, 1), mWorld);
 
 	output.Position			=mul(worldPos, viewProj);
-	output.TexCoord0.xyz	=mul(input.Normal.xyz, mWorld);	
-	output.TexCoord1.xyz	=worldPos;
-	output.TexCoord2		=input.TexCoord0;	//4 texture factors (adds to 1)
-	output.TexCoord3		=input.TexCoord1;	//4 texture factors (adds to 1)
+	output.WorldNormal.xyz	=mul(norm.xyz, mWorld);	
+	output.WorldPosFF.xyz	=worldPos.xyz;
+	output.TexWeight0		=tweight0;	//4 texture factors (adds to 1)
+	output.TexWeight1		=tweight1;	//4 texture factors (adds to 1)
+	output.Color			=col;
 
 	//store fog factor
-	output.TexCoord0.w	=ComputeFogFactor(length(worldPos.xyz - mEyePos.xyz));
-	output.TexCoord1.w	=0;
+	output.WorldPosFF.w	=ComputeFogFactor(length(worldPos.xyz - mEyePos.xyz));
+
+	//not using this at the moment
+	output.WorldNormal.w	=0;
 	
 	//return the output structure
 	return	output;
@@ -61,12 +74,11 @@ VVPosTex04Tex14Tex24Tex34 WNormWPosTexFactVS(VPosNormTex04Tex14 input)
 
 
 //trilight with 8 texture lookups in an atlas
-float4	TriTexFact8PS(VVPosTex04Tex14Tex24Tex34 input) : SV_Target
+float4	TerrainPS(PSTerrain input) : SV_Target
 {
 	float4	texColor	=float4(0, 0, 0, 0);
 
-	//texcoord1 has worldspace position
-	float2	worldXZ	=input.TexCoord1.xz;
+	float2	worldXZ	=input.WorldPosFF.xz;
 
 	//might make this a per element scale factor
 	worldXZ	*=0.01;
@@ -77,43 +89,43 @@ float4	TriTexFact8PS(VVPosTex04Tex14Tex24Tex34 input) : SV_Target
 	tcoord.x	*=0.25f;
 	tcoord.y	*=0.5f;
 
-	texColor	+=mTexture0.Sample(Tex0Sampler, tcoord) * input.TexCoord2.x;
+	texColor	+=mTexture0.Sample(Tex0Sampler, tcoord) * input.TexWeight0.x;
 
 	tcoord.x	+=0.25f;
-	texColor	+=mTexture0.Sample(Tex0Sampler, tcoord) * input.TexCoord2.y;
+	texColor	+=mTexture0.Sample(Tex0Sampler, tcoord) * input.TexWeight0.y;
 
 	tcoord.x	+=0.25f;
-	texColor	+=mTexture0.Sample(Tex0Sampler, tcoord) * input.TexCoord2.z;
+	texColor	+=mTexture0.Sample(Tex0Sampler, tcoord) * input.TexWeight0.z;
 
 	tcoord.x	+=0.25f;
-	texColor	+=mTexture0.Sample(Tex0Sampler, tcoord) * input.TexCoord2.w;
+	texColor	+=mTexture0.Sample(Tex0Sampler, tcoord) * input.TexWeight0.w;
 
 	tcoord.x	-=1.0f;
 	tcoord.y	+=0.5f;
-	texColor	+=mTexture0.Sample(Tex0Sampler, tcoord) * input.TexCoord3.x;
+	texColor	+=mTexture0.Sample(Tex0Sampler, tcoord) * input.TexWeight1.x;
 
 	tcoord.x	+=0.25f;
-	texColor	+=mTexture0.Sample(Tex0Sampler, tcoord) * input.TexCoord3.y;
+	texColor	+=mTexture0.Sample(Tex0Sampler, tcoord) * input.TexWeight1.y;
 
 	tcoord.x	+=0.25f;
-	texColor	+=mTexture0.Sample(Tex0Sampler, tcoord) * input.TexCoord3.z;
+	texColor	+=mTexture0.Sample(Tex0Sampler, tcoord) * input.TexWeight1.z;
 
 	tcoord.x	+=0.25f;
-	texColor	+=mTexture0.Sample(Tex0Sampler, tcoord) * input.TexCoord3.w;
+	texColor	+=mTexture0.Sample(Tex0Sampler, tcoord) * input.TexWeight1.w;
 
-	float3	pnorm	=input.TexCoord0.xyz;
-	float	fog		=input.TexCoord0.w;
+	float3	wnorm	=input.WorldNormal.xyz;
+	float	fog		=input.WorldPosFF.w;
 
-	pnorm	=normalize(pnorm);
+	wnorm	=normalize(wnorm);
 
 	float3	lightDir	=float3(mLightColor0.w, mLightColor1.w, mLightColor2.w);
 
-	float3	triLight	=ComputeTrilight(pnorm, lightDir,
+	float3	triLight	=ComputeTrilight(wnorm, lightDir,
 							mLightColor0.xyz, mLightColor1.xyz, mLightColor2.xyz);
 
 	texColor.xyz	*=triLight;
 
-	float3	skyColor	=CalcSkyColorGradient(input.TexCoord1.xyz, mSkyGradient0, mSkyGradient1);
+	float3	skyColor	=CalcSkyColorGradient(input.WorldPosFF.xyz, mSkyGradient0, mSkyGradient1);
 
 	texColor.xyz	=lerp(texColor.xyz, skyColor, fog);
 

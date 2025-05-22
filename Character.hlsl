@@ -14,18 +14,6 @@ cbuffer Character : register(b3)
 StructuredBuffer<VPosNormTexColIdxBone>	SBVert : register(t0);
 
 //functions
-void	UnPackNormCol(uint4 squished,
-	out float4 lowVal, out float4 hiVal, out uint idx)
-{
-	lowVal	=f16tof32(squished);
-
-	squished	>>=16;
-
-	hiVal	=f16tof32(squished);
-
-	idx	=squished.w;
-}
-
 void	UnPackBone(uint4 squished,
 	out uint4 indexes, out half4 weights)
 {
@@ -96,7 +84,7 @@ WPosWNormTexColorIdx SkinVS(uint ID : SV_VertexID)
 
 	float4	norm, col;
 	uint	idx;
-	UnPackNormCol(vpn.NormVCol, norm, col, idx);
+	UnPackNormColIdx(vpn.NormVCol, norm, col, idx);
 
 	uint4	indexes;
 	float4	weights;

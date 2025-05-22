@@ -49,7 +49,7 @@ Post.hlsl
 TextMode.hlsl
 	TextModePS
 Terrain.hlsl
-	TriTexFact8PS
+	TerrainPS
 	SkyGradientFogPS
 Particles.hlsl
 	ParticleSBPS

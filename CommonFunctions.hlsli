@@ -70,7 +70,7 @@ shared Texture1D	mCelTable : register(t2);
 shared Texture2D	mShadowTexture : register(t4);	//directional
 shared TextureCube	mShadowCube : register(t5);		//point
 
-//these are assigned from C# side
+//these are assigned from C side
 SamplerState	Tex0Sampler : register(s0);
 SamplerState	Tex1Sampler : register(s1);
 SamplerState	CelSampler : register(s2);
@@ -142,6 +142,30 @@ float3 ComputeTrilight(float3 normal, float3 lightDir, float3 c0, float3 c1, flo
 		+ (c0 * max(0, -LdotN));
 		
 	return	totalLight;
+}
+
+
+//unpack two half4 values out of a uint4 into float4s
+void	UnPackStuff(uint4 stuff,
+	out float4 lowVal, out float4 hiVal)
+{
+	lowVal	=f16tof32(stuff);
+
+	stuff	>>=16;
+
+	hiVal	=f16tof32(stuff);
+}
+
+void	UnPackNormColIdx(uint4 squished,
+	out float4 lowVal, out float4 hiVal, out uint idx)
+{
+	lowVal	=f16tof32(squished);
+
+	squished	>>=16;
+
+	hiVal	=f16tof32(squished);
+
+	idx	=squished.w;
 }
 
 
