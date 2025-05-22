@@ -13,13 +13,11 @@ Trilight.hlsl
 	TriTexCTablePS
 	TriCelTexCTablePS
 2D.hlsl
-	ParticlePS
 	TextPS
 	UIStuffPS
 	ShapePS
 	KeyedGumpPS
 	GumpPS
-	ParticleDMNPS
 BSP.hlsl
 	LightMapPS
 	LightMapCelPS
@@ -38,23 +36,16 @@ BSP.hlsl
 	LightMapAnimShadowPS
 Post.hlsl
 	BloomExtractPS
-	BloomExtract93PS
 	BloomCombinePS
-	BloomCombine93PS
 	GaussianBlurXPS
-	GaussianBlurX93PS
 	GaussianBlurYPS
-	GaussianBlurY93PS
 	BiLatBlurXPS
 	BiLatBlurYPS
 	DebugMatIDDraw
 	DebugDepthDraw
 	OutlinePS
-	Outline93PS
 	ModulatePS
-	Modulate93PS
 	BleachBypassPS
-	BleachBypass93PS
 TextMode.hlsl
 	TextModePS
 Terrain.hlsl
