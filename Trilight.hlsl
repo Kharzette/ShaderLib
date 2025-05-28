@@ -12,7 +12,8 @@
 //the eye colour of a character etc...
 cbuffer CustomColours : register(b9)
 {
-	float4	mCColors[NUM_CUSTOM_COLOURS];
+	float4		mCColors[NUM_CUSTOM_COLOURS];
+	float4x4	mCSPow;		//spec pow (used as array)
 }
 
 
@@ -61,7 +62,7 @@ float4 TriPS(WPosWNormTexColorIdx input) : SV_Target
 	float3	triLight	=ComputeTrilight(wnorm, lightDir,
 							mLightColor0, mLightColor1, mLightColor2);
 
-	float3	specular	=ComputeGoodSpecular(wpos, lightDir, wnorm, triLight);
+	float3	specular	=ComputeGoodSpecular(wpos, lightDir, wnorm, triLight, mSpecColorPow.w);
 	float3	litSolid	=mSolidColour.xyz * triLight;
 
 	specular	=saturate(specular + litSolid);
@@ -78,7 +79,7 @@ float4 TriCelPS(WPosWNormTexColorIdx input) : SV_Target
 	float3	triLight	=ComputeTrilight(wnorm, lightDir,
 							mLightColor0, mLightColor1, mLightColor2);
 
-	float3	specular	=ComputeGoodSpecular(wpos, lightDir, wnorm, triLight);
+	float3	specular	=ComputeGoodSpecular(wpos, lightDir, wnorm, triLight, mSpecColorPow.w);
 
 	CelStuff(triLight, specular);
 
@@ -106,7 +107,7 @@ float4 TriTexPS(WPosWNormTexColorIdx input) : SV_Target
 	float3	triLight	=ComputeTrilight(wnorm, lightDir,
 							mLightColor0, mLightColor1, mLightColor2);
 
-	float3	specular	=ComputeGoodSpecular(wpos, lightDir, wnorm, triLight);
+	float3	specular	=ComputeGoodSpecular(wpos, lightDir, wnorm, triLight, mSpecColorPow.w);
 
 	float3	litColor	=texColor.xyz * triLight;
 
@@ -132,7 +133,7 @@ float4 TriCelTexPS(WPosWNormTexColorIdx input) : SV_Target
 	float3	triLight	=ComputeTrilight(wnorm, lightDir,
 							mLightColor0, mLightColor1, mLightColor2);
 
-	float3	specular	=ComputeGoodSpecular(wpos, lightDir, wnorm, triLight);
+	float3	specular	=ComputeGoodSpecular(wpos, lightDir, wnorm, triLight, mSpecColorPow.w);
 
 	CelStuff(triLight, specular);
 
@@ -154,7 +155,7 @@ float4 TriColorPS(WPosWNormTexColorIdx input) : SV_Target
 	float3	triLight	=ComputeTrilight(wnorm, lightDir,
 							mLightColor0, mLightColor1, mLightColor2);
 
-	float3	specular	=ComputeGoodSpecular(wpos, lightDir, wnorm, triLight);
+	float3	specular	=ComputeGoodSpecular(wpos, lightDir, wnorm, triLight, mSpecColorPow.w);
 
 	float3	litSolid	=col * triLight;
 
@@ -174,7 +175,7 @@ float4 TriCelColorPS(WPosWNormTexColorIdx input) : SV_Target
 	float3	triLight	=ComputeTrilight(wnorm, lightDir,
 							mLightColor0, mLightColor1, mLightColor2);
 
-	float3	specular	=ComputeGoodSpecular(wpos, lightDir, wnorm, triLight);
+	float3	specular	=ComputeGoodSpecular(wpos, lightDir, wnorm, triLight, mSpecColorPow.w);
 
 	CelStuff(triLight, specular);
 
@@ -202,7 +203,7 @@ float4 TriTexColorPS(WPosWNormTexColorIdx input) : SV_Target
 	float3	triLight	=ComputeTrilight(wnorm, lightDir,
 							mLightColor0, mLightColor1, mLightColor2);
 
-	float3	specular	=ComputeGoodSpecular(wpos, lightDir, wnorm, triLight);
+	float3	specular	=ComputeGoodSpecular(wpos, lightDir, wnorm, triLight, mSpecColorPow.w);
 
 	float3	litSolid	=texel.xyz * col * triLight;
 
@@ -228,7 +229,7 @@ float4 TriCelTexColorPS(WPosWNormTexColorIdx input) : SV_Target
 	float3	triLight	=ComputeTrilight(wnorm, lightDir,
 							mLightColor0, mLightColor1, mLightColor2);
 
-	float3	specular	=ComputeGoodSpecular(wpos, lightDir, wnorm, triLight);
+	float3	specular	=ComputeGoodSpecular(wpos, lightDir, wnorm, triLight, mSpecColorPow.w);
 
 	CelStuff(triLight, specular);
 
@@ -247,7 +248,11 @@ float4 TriCTablePS(WPosWNormTexColorIdx input) : SV_Target
 	float3	wpos	=input.WorldPosU.xyz;
 	uint	ctIdx	=input.Idx;
 
+	uint	lowIdx	=ctIdx & 0x3;
+	uint	hiIdx	=ctIdx >> 2;
+
 	float3	vcolor	=mCColors[ctIdx].xyz;
+	float	spow	=mCSPow[lowIdx][hiIdx];
 
 	wnorm	=normalize(wnorm);
 
@@ -255,7 +260,7 @@ float4 TriCTablePS(WPosWNormTexColorIdx input) : SV_Target
 	float3	triLight	=ComputeTrilight(wnorm, lightDir,
 							mLightColor0, mLightColor1, mLightColor2);
 
-	float3	specular	=ComputeGoodSpecular(wpos, lightDir, wnorm, triLight);
+	float3	specular	=ComputeGoodSpecular(wpos, lightDir, wnorm, triLight, spow);
 	float3	litSolid	=mSolidColour.xyz * triLight * vcolor;
 
 	specular	=saturate(specular + litSolid);
@@ -270,7 +275,11 @@ float4 TriCelCTablePS(WPosWNormTexColorIdx input) : SV_Target
 	float3	wpos	=input.WorldPosU.xyz;
 	uint	ctIdx	=input.Idx;
 
+	uint	lowIdx	=ctIdx & 0x3;
+	uint	hiIdx	=ctIdx >> 2;
+
 	float3	vcolor	=mCColors[ctIdx].xyz;
+	float	spow	=mCSPow[lowIdx][hiIdx];
 
 	wnorm	=normalize(wnorm);
 
@@ -278,7 +287,7 @@ float4 TriCelCTablePS(WPosWNormTexColorIdx input) : SV_Target
 	float3	triLight	=ComputeTrilight(wnorm, lightDir,
 							mLightColor0, mLightColor1, mLightColor2);
 
-	float3	specular	=ComputeGoodSpecular(wpos, lightDir, wnorm, triLight);
+	float3	specular	=ComputeGoodSpecular(wpos, lightDir, wnorm, triLight, spow);
 
 	CelStuff(triLight, specular);
 
@@ -302,7 +311,11 @@ float4 TriTexCTablePS(WPosWNormTexColorIdx input) : SV_Target
 	float3	wpos		=input.WorldPosU.xyz;
 	uint	ctIdx		=input.Idx;
 
+	uint	lowIdx	=ctIdx & 0x3;
+	uint	hiIdx	=ctIdx >> 2;
+
 	float3	vcolor	=mCColors[ctIdx].xyz;
+	float	spow	=mCSPow[lowIdx][hiIdx];
 
 	wnorm	=normalize(wnorm);
 
@@ -310,8 +323,8 @@ float4 TriTexCTablePS(WPosWNormTexColorIdx input) : SV_Target
 	float3	triLight	=ComputeTrilight(wnorm, lightDir,
 							mLightColor0, mLightColor1, mLightColor2);
 
-	float3	specular	=ComputeGoodSpecular(wpos, lightDir, wnorm, triLight);
-	float3	litSolid	=mSolidColour.xyz * triLight * texColor.xyz * vcolor;
+	float3	specular	=ComputeGoodSpecular(wpos, lightDir, wnorm, triLight, spow);
+	float3	litSolid	=mSolidColour.xyz * triLight * (texColor.xyz + vcolor);
 
 	specular	=saturate(specular + litSolid);
 
@@ -331,7 +344,11 @@ float4 TriCelTexCTablePS(WPosWNormTexColorIdx input) : SV_Target
 	float3	wpos		=input.WorldPosU.xyz;
 	uint	ctIdx		=input.Idx;
 
+	uint	lowIdx	=ctIdx & 0x3;
+	uint	hiIdx	=ctIdx >> 2;
+
 	float3	vcolor	=mCColors[ctIdx].xyz;
+	float	spow	=mCSPow[lowIdx][hiIdx];
 
 	wnorm	=normalize(wnorm);
 
@@ -339,11 +356,16 @@ float4 TriCelTexCTablePS(WPosWNormTexColorIdx input) : SV_Target
 	float3	triLight	=ComputeTrilight(wnorm, lightDir,
 							mLightColor0, mLightColor1, mLightColor2);
 
-	float3	specular	=ComputeGoodSpecular(wpos, lightDir, wnorm, triLight);
+	float3	specular	=ComputeGoodSpecular(wpos, lightDir, wnorm, triLight, spow);
+
+	//the texture doesn't react well with cel
+	//since it is an additive overlay of sorts, it tends
+	//to glow in the dark a bit.
+	float3	texNoCel	=triLight * texColor.xyz;
 
 	CelStuff(triLight, specular);
 
-	float3	litSolid	=mSolidColour.xyz * triLight * texColor.xyz * vcolor;
+	float3	litSolid	=mSolidColour.xyz * (triLight * vcolor) + texNoCel;
 
 	specular	=saturate(specular + litSolid);
 

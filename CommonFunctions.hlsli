@@ -169,15 +169,16 @@ void	UnPackNormColIdx(uint4 squished,
 }
 
 
-float3 ComputeGoodSpecular(float3 wpos, float3 lightDir, float3 pnorm, float3 lightVal)
+float3 ComputeGoodSpecular(float3 wpos, float3 lightDir, float3 pnorm,
+							float3 lightVal, float spow)
 {
 	float3	eyeVec	=normalize(mEyePos - wpos);
 	float3	halfVec	=normalize(-eyeVec + lightDir);
 	float	ndotv	=saturate(-dot(eyeVec, pnorm));
 	float	ndoth	=saturate(-dot(halfVec, pnorm));
 
-	float	normalizationTerm	=(mSpecColorPow.w + 2.0f) / 8.0f;
-	float	blinnPhong			=pow(ndoth, mSpecColorPow.w);
+	float	normalizationTerm	=(spow + 2.0f) / 8.0f;
+	float	blinnPhong			=pow(ndoth, spow);
 	float	specTerm			=normalizationTerm * blinnPhong;
 	
 	//fresnel stuff
@@ -186,7 +187,7 @@ float3 ComputeGoodSpecular(float3 wpos, float3 lightDir, float3 pnorm, float3 li
 	float3	fresTerm	=mSpecColorPow.xyz + (1.0f - mSpecColorPow.xyz) * exponential;
 
 	//vis stuff
-	float	alpha	=1.0f / (sqrt(PI_OVER_FOUR * mSpecColorPow.w + PI_OVER_TWO));
+	float	alpha	=1.0f / (sqrt(PI_OVER_FOUR * spow + PI_OVER_TWO));
 	float	visTerm	=(lightVal * (1.0f - alpha) + alpha) *
 				(ndotv * (1.0f - alpha) + alpha);
 
