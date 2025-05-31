@@ -19,11 +19,15 @@ WPosWNormTexColorIdx StaticVS(uint ID : SV_VertexID)
 
 	//generate the world-view-proj matrix
 	float4x4	wvp	=mul(mul(mWorld, mView), mProjection);
+
+	//local scale, why I didn't want this in the world
+	//matrix I sadly do not remember
+	float3	scalyPos	=vpn.PositionU.xyz * mLocalScale.xyz;
 	
 	//transform the input position to the output
-	output.Position		=mul(float4(vpn.PositionU.xyz, 1), wvp);
+	output.Position		=mul(float4(scalyPos, 1), wvp);
 	output.WorldNormalV	=mul(norm.xyz, mWorld);
-	output.WorldPosU	=mul(float4(vpn.PositionU.xyz, 1), mWorld);
+	output.WorldPosU	=mul(float4(scalyPos.xyz, 1), mWorld);
 	output.Color		=col;
 	output.Idx			=idx;
 
